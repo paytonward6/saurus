@@ -1,10 +1,13 @@
 use std::collections::VecDeque;
 use std::fmt;
 use std::path::PathBuf;
+
+use crate::tokenizer::latexer;
+
 pub fn run(file_str: &str, path: &PathBuf) {
     let tokens = tokenize(file_str);
     latexer::write(&tokens, path).unwrap_or_else(|error| {
-        println!("{}ahhhh", error);
+        println!("{}", error);
     });
 }
 
@@ -13,9 +16,16 @@ pub enum TokenKind {
     FileStart,
     FileEnd,
     Heading(usize),
-    BeginList,
-    List(char),
-    EndList,
+
+
+    BeginUnorderedList,
+    UnorderedListItem(char),
+    EndUnorderedList,
+
+    BeginOrderedList,
+    OrderedListItem(usize),
+    EndOrderedList,
+
     Blank,
 }
 
@@ -29,9 +39,9 @@ pub struct Token {
 impl Token {
     fn new(contents: Option<String>, kind: TokenKind, line_num: usize) -> Self {
         Token {
-            contents: contents,
-            kind: kind,
-            line_num: line_num,
+            contents,
+            kind,
+            line_num,
         }
     }
 }
@@ -54,21 +64,26 @@ fn tokenize(file_str: &str) -> Vec<Token> {
         let line = line.to_string();
         if re::heading(&line) {
             // TODO: ONLY PUTTING ONE FOR LEVEL 1
-            tokens.push(Token::new(Some(line), Kind::Heading(1), i));
-        } else if re::list(&line) {
+            let (num_hash, line) = re::parse_heading(&line);
+            tokens.push(Token::new(Some(line), Kind::Heading(num_hash), i));
+        } else if re::unordered_list(&line) {
+            let line = re::replace_unordered_list(&line);
+
+            #[deny(clippy::single_match)]
             if let Some(last) = stack.back() {
-                if last != &Kind::BeginList {
-                    tokens.push(Token::new(None, Kind::BeginList, i));
-                    stack.push_back(Kind::BeginList);
+                if last != &Kind::BeginUnorderedList {
+                    tokens.push(Token::new(None, Kind::BeginUnorderedList, i));
+                    stack.push_back(Kind::BeginUnorderedList);
                 }
             }
+
             // TODO: ONLY PUTTING '-' FOR NOW
-            tokens.push(Token::new(Some(line), Kind::List('-'), i));
+            tokens.push(Token::new(Some(line), Kind::UnorderedListItem('-'), i));
         } else if re::blank(&line) {
             match stack.back() {
-                Some(Kind::BeginList) => {
-                    tokens.push(Token::new(None, Kind::EndList, i));
-                    stack.push_back(Kind::EndList)
+                Some(Kind::BeginUnorderedList) => {
+                    tokens.push(Token::new(None, Kind::EndUnorderedList, i));
+                    stack.push_back(Kind::EndUnorderedList)
                 }
                 _ => (),
             }
@@ -77,7 +92,7 @@ fn tokenize(file_str: &str) -> Vec<Token> {
 
     match stack.back() {
         Some(Kind::FileStart) => tokens.push(Token::new(None, Kind::FileEnd, usize::MIN)),
-        Some(Kind::BeginList) => tokens.push(Token::new(None, Kind::EndList, usize::MAX - 1)),
+        Some(Kind::BeginUnorderedList) => tokens.push(Token::new(None, Kind::EndUnorderedList, usize::MAX - 1)),
         _ => (),
     }
 
@@ -93,50 +108,37 @@ mod re {
         re.is_match(line)
     }
 
-    pub fn list(line: &str) -> bool {
-        let re: Regex = Regex::new(r"^\s*[\-\+]").unwrap();
+    pub fn parse_heading(line: &str) -> (usize, String) {
+        let re: Regex = Regex::new(r"#\s*").unwrap();
+        let line = line.trim();
+        let first = line.find(' ');
+        (
+            line.split_at(first.unwrap()).0.chars().into_iter().count(),
+            re.replace_all(line, "").to_string(),
+        )
+    }
+
+    pub fn unordered_list(line: &str) -> bool {
+        let re: Regex = Regex::new(r"^\s*[\-\+]\s*").unwrap();
         re.is_match(line)
+    }
+
+    pub fn replace_unordered_list(line: &str) -> String {
+        let re: Regex = Regex::new(r"^\s*[\-\+]\s*").unwrap();
+        re.replace(line, "").to_string()
+    }
+
+    pub fn ordered_list(line: &str) -> bool {
+        let re: Regex = Regex::new(r"^\s*\d\.").unwrap();
+        re.is_match(line)
+    }
+
+    pub fn replace_ordered_list(line: &str) -> String {
+        let re: Regex = Regex::new(r"^\s\d\.").unwrap();
+        re.replace(line, "").to_string()
     }
 
     pub fn blank(line: &str) -> bool {
         line.is_empty()
-    }
-}
-
-mod utils {
-    pub fn line_count(file_str: &str) -> usize {
-        file_str.lines().into_iter().count()
-    }
-}
-
-mod latexer {
-    use crate::tokenizer::parse::{Token, TokenKind};
-    use std::fs;
-    use std::io::{Error, Write};
-    use std::path::PathBuf;
-
-    pub fn write(contents: &Vec<Token>, path: &PathBuf) -> Result<(), Error> {
-        let mut file = fs::File::create(path)?;
-        for line in contents.iter() {
-            let line = out(line);
-            if let Some(line) = line {
-                write!(file, "{}\n", line)?;
-            }
-        }
-        Ok(())
-    }
-
-    fn out(token: &Token) -> Option<String> {
-        match token.kind {
-            TokenKind::FileStart => {
-                Some(format!("\\documentclass{{article}}\n\\begin{{document}}"))
-            }
-            TokenKind::FileEnd => Some(format!("\\end{{document}}")),
-            TokenKind::Heading(_) => Some(format!("\\section{{}}")),
-            TokenKind::BeginList => Some(format!("\\begin{{itemize}}")),
-            TokenKind::List(_) => Some(format!("\t\\item{}", token.contents.as_ref().unwrap())),
-            TokenKind::EndList => Some(format!("\\end{{itemize}}\n")),
-            _ => None,
-        }
     }
 }
