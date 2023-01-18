@@ -1,41 +1,88 @@
+use std::collections::VecDeque;
 use std::fmt;
-pub fn run(file_str: &str) {
-    latexer::write(&tokenize(file_str)).unwrap_or_else(|error| {println!("{}ahhhh", error);});
+use std::path::PathBuf;
+pub fn run(file_str: &str, path: &PathBuf) {
+    let tokens = tokenize(file_str);
+    latexer::write(&tokens, path).unwrap_or_else(|error| {
+        println!("{}ahhhh", error);
+    });
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum TokenKind {
-    HEADING(usize),
-    LIST(char),
+    FileStart,
+    FileEnd,
+    Heading(usize),
+    BeginList,
+    List(char),
+    EndList,
+    Blank,
 }
 
 #[derive(Debug)]
 pub struct Token {
-    pub contents: String,
+    pub contents: Option<String>,
     pub kind: TokenKind,
     pub line_num: usize,
 }
 
+impl Token {
+    fn new(contents: Option<String>, kind: TokenKind, line_num: usize) -> Self {
+        Token {
+            contents: contents,
+            kind: kind,
+            line_num: line_num,
+        }
+    }
+}
+
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.contents)
+        write!(f, "{}", self.contents.as_ref().unwrap())
     }
 }
 
 fn tokenize(file_str: &str) -> Vec<Token> {
     type Kind = TokenKind;
-    let mut tokens: Vec<Token> = Vec::new(); 
+    let mut tokens: Vec<Token> = Vec::new();
+    let mut stack: VecDeque<TokenKind> = VecDeque::new();
+
+    stack.push_back(Kind::FileStart);
+    tokens.push(Token::new(None, Kind::FileStart, usize::MIN));
+
     for (i, line) in file_str.lines().enumerate() {
         let line = line.to_string();
         if re::heading(&line) {
             // TODO: ONLY PUTTING ONE FOR LEVEL 1
-            tokens.push(Token {contents: line, kind: Kind::HEADING(1), line_num: i});
-        }
-        else if re::list(&line) {
+            tokens.push(Token::new(Some(line), Kind::Heading(1), i));
+        } else if re::list(&line) {
+            if let Some(last) = stack.back() {
+                if last != &Kind::BeginList {
+                    tokens.push(Token::new(None, Kind::BeginList, i));
+                    stack.push_back(Kind::BeginList);
+                }
+            }
             // TODO: ONLY PUTTING '-' FOR NOW
-            tokens.push(Token {contents: line, kind: Kind::LIST('-'), line_num: i});
+            tokens.push(Token::new(Some(line), Kind::List('-'), i));
+        } else if re::blank(&line) {
+            match stack.back() {
+                Some(Kind::BeginList) => {
+                    tokens.push(Token::new(None, Kind::EndList, i));
+                    stack.push_back(Kind::EndList)
+                }
+                _ => (),
+            }
         }
     }
+
+    match stack.back() {
+        Some(Kind::FileStart) => tokens.push(Token::new(None, Kind::FileEnd, usize::MIN)),
+        Some(Kind::BeginList) => tokens.push(Token::new(None, Kind::EndList, usize::MAX - 1)),
+        _ => (),
+    }
+
+    stack.push_back(Kind::FileEnd);
+    tokens.push(Token::new(None, Kind::FileEnd, usize::MAX));
     tokens
 }
 
@@ -50,8 +97,11 @@ mod re {
         let re: Regex = Regex::new(r"^\s*[\-\+]").unwrap();
         re.is_match(line)
     }
-}
 
+    pub fn blank(line: &str) -> bool {
+        line.is_empty()
+    }
+}
 
 mod utils {
     pub fn line_count(file_str: &str) -> usize {
@@ -59,28 +109,34 @@ mod utils {
     }
 }
 
-mod latexer{
+mod latexer {
     use crate::tokenizer::parse::{Token, TokenKind};
-    use std::io::{Error, Write};
     use std::fs;
+    use std::io::{Error, Write};
+    use std::path::PathBuf;
 
-    static INTRO: &str = "\\documentclass{article}\n\\begin{document}";
-    static OUTRO: &str = "\\end{document}";
-
-    pub fn write(contents: &Vec<Token>) -> Result<(), Error> {
-        let mut file = fs::File::create("test.tex")?;
-        write!(file, "{}\n", INTRO)?;
+    pub fn write(contents: &Vec<Token>, path: &PathBuf) -> Result<(), Error> {
+        let mut file = fs::File::create(path)?;
         for line in contents.iter() {
-            write!(file, "{}\n", out(line))?;
+            let line = out(line);
+            if let Some(line) = line {
+                write!(file, "{}\n", line)?;
+            }
         }
-        write!(file, "{}\n", OUTRO)?;
         Ok(())
     }
 
-    fn out(token: &Token) -> String {
+    fn out(token: &Token) -> Option<String> {
         match token.kind {
-            TokenKind::HEADING(_) => format!("\\section{{}}"),
-            TokenKind::LIST(_) => format!("\\begin{{itemize}}\n \t\\item{} \n\\end{{itemize}}", token.contents),
+            TokenKind::FileStart => {
+                Some(format!("\\documentclass{{article}}\n\\begin{{document}}"))
+            }
+            TokenKind::FileEnd => Some(format!("\\end{{document}}")),
+            TokenKind::Heading(_) => Some(format!("\\section{{}}")),
+            TokenKind::BeginList => Some(format!("\\begin{{itemize}}")),
+            TokenKind::List(_) => Some(format!("\t\\item{}", token.contents.as_ref().unwrap())),
+            TokenKind::EndList => Some(format!("\\end{{itemize}}\n")),
+            _ => None,
         }
     }
 }

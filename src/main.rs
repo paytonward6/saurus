@@ -1,9 +1,10 @@
-use std::fs;
 use std::error::Error;
+use std::fs;
+use std::path::PathBuf;
 
 use saurus::tokenizer::parse;
 
 fn main() {
-    let file_str = fs::read_to_string("./src/notes.txt").expect("Unable to read from file!");
-    parse::run(&file_str);
+    let file_str = fs::read_to_string("./tests/notes.txt").expect("Unable to read from file!");
+    parse::run(&file_str, &PathBuf::from("./tests/TeX/main.tex"));
 }
