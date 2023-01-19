@@ -19,18 +19,28 @@ fn generate(token: &Token) -> Option<String> {
     match token.kind {
         TokenKind::FileStart => Some(format!("\\documentclass{{article}}\n\\begin{{document}}")),
         TokenKind::FileEnd => Some(format!("\\end{{document}}")),
-        TokenKind::Heading(level) => {
-            match level {
-                1 => Some(format!("\\section{{{}}}", token.contents.as_ref().unwrap())),
-                2 => Some(format!("\\subsection{{{}}}", token.contents.as_ref().unwrap())),
-                3 => Some(format!("\\subsubsection{{{}}}", token.contents.as_ref().unwrap())),
-                _ => None
-            }
-        }
+        TokenKind::Heading(level) => match level {
+            1 => Some(format!("\\section{{{}}}", token.contents.as_ref().unwrap())),
+            2 => Some(format!(
+                "\\subsection{{{}}}",
+                token.contents.as_ref().unwrap()
+            )),
+            3 => Some(format!(
+                "\\subsubsection{{{}}}",
+                token.contents.as_ref().unwrap()
+            )),
+            _ => None,
+        },
         TokenKind::BeginUnorderedList => Some(format!("\\begin{{itemize}}")),
-        TokenKind::UnorderedListItem(_) => Some(format!("    \\item {}", token.contents.as_ref().unwrap())),
+        TokenKind::UnorderedListItem(_) => {
+            Some(format!("    \\item {}", token.contents.as_ref().unwrap()))
+        }
         TokenKind::EndUnorderedList => Some(format!("\\end{{itemize}}\n")),
+        TokenKind::BeginOrderedList => Some(format!("\\begin{{enumerate}}")),
+        TokenKind::OrderedListItem(_) => {
+            Some(format!("    \\item {}", token.contents.as_ref().unwrap()))
+        }
+        TokenKind::EndOrderedList => Some(format!("\\end{{enumerate}}\n")),
         _ => None,
     }
 }
-

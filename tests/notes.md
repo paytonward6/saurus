@@ -1,13 +1,15 @@
+# Heading 1
 - baz
 - qux
-# Heading 1
 
 - foo
 - bar
 
 ## Heading 2
-- baz
-- qux
+
+1. fart
+2. blart
+3. shart
 
 ### This is my new heading
 
