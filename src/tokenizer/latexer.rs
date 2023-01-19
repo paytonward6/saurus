@@ -36,7 +36,7 @@ fn generate(token: &Token) -> Option<String> {
             Some(format!("    \\item {}", token.contents.as_ref().unwrap()))
         }
         TokenKind::EndUnorderedList => Some(format!("\\end{{itemize}}\n")),
-        TokenKind::BeginOrderedList => Some(format!("\\begin{{enumerate}}")),
+        TokenKind::BeginOrderedList(num) => Some(format!("\\begin{{enumerate}}\n    \\setcounter{{enumi}}{{{}}}", num - 1)),
         TokenKind::OrderedListItem(_) => {
             Some(format!("    \\item {}", token.contents.as_ref().unwrap()))
         }

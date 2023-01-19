@@ -21,7 +21,7 @@ pub enum TokenKind {
     UnorderedListItem(char),
     EndUnorderedList,
 
-    BeginOrderedList,
+    BeginOrderedList(usize),
     OrderedListItem(usize),
     EndOrderedList,
 
@@ -63,7 +63,7 @@ fn tokenize(file_str: &str) -> Vec<Token> {
         let line = line.to_string();
         if re::heading(&line) {
             match stack.back() {
-                Some(Kind::BeginOrderedList) => {
+                Some(Kind::BeginOrderedList(_)) => {
                     tokens.push(Token::new(None, Kind::EndOrderedList, i));
                     stack.push_back(Kind::EndOrderedList);
                 }
@@ -92,22 +92,33 @@ fn tokenize(file_str: &str) -> Vec<Token> {
             tokens.push(Token::new(Some(line), Kind::UnorderedListItem('-'), i));
         } else if re::ordered_list(&line) {
             let (number, line) = re::replace_ordered_list(&line);
+            println!("{line}");
 
             #[deny(clippy::single_match)]
             if let Some(last) = stack.back() {
-                if last != &Kind::BeginOrderedList {
-                    tokens.push(Token::new(None, Kind::BeginOrderedList, i));
-                    stack.push_back(Kind::BeginOrderedList);
+                match last {
+                    Kind::BeginOrderedList(_) => {
+                        tokens.push(Token::new(Some(line), Kind::OrderedListItem(number), i));
+                    }
+                    _ => {
+                        // Begin list
+                        tokens.push(Token::new(None, Kind::BeginOrderedList(number), i));
+                        stack.push_back(Kind::BeginOrderedList(number));
+                        tokens.push(Token::new(Some(line), Kind::OrderedListItem(number), i));
+                    }
                 }
             }
 
             // TODO: ONLY PUTTING '-' FOR NOW
-            tokens.push(Token::new(Some(line), Kind::OrderedListItem(number), i));
         } else if re::blank(&line) {
             match stack.back() {
                 Some(Kind::BeginUnorderedList) => {
                     tokens.push(Token::new(None, Kind::EndUnorderedList, i));
                     stack.push_back(Kind::EndUnorderedList)
+                }
+                Some(Kind::BeginOrderedList(_)) => {
+                    tokens.push(Token::new(None, Kind::EndOrderedList, i));
+                    stack.push_back(Kind::EndOrderedList)
                 }
                 _ => (),
             }
@@ -123,6 +134,7 @@ fn tokenize(file_str: &str) -> Vec<Token> {
     }
 
     stack.push_back(Kind::FileEnd);
+    println!("{:?}", stack);
     tokens.push(Token::new(None, Kind::FileEnd, usize::MAX));
     tokens
 }
@@ -155,12 +167,12 @@ mod re {
     }
 
     pub fn ordered_list(line: &str) -> bool {
-        let re: Regex = Regex::new(r"^\s*\d\.").unwrap();
+        let re: Regex = Regex::new(r"^\s*\d*\.").unwrap();
         re.is_match(line)
     }
 
     pub fn replace_ordered_list(line: &str) -> (usize, String) {
-        let re = Regex::new(r"(\d)\.(\s*.*)").unwrap();
+        let re = Regex::new(r"(\d*)\.(\s*.*)").unwrap();
         let cap = re.captures(line).unwrap();
 
         let number = cap.get(1).unwrap().as_str();
