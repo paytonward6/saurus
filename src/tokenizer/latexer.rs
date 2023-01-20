@@ -4,18 +4,7 @@ use std::path::PathBuf;
 
 use crate::tokenizer::parse::{Token, TokenKind};
 
-pub fn write(contents: &Vec<Token>, path: &PathBuf) -> Result<(), Error> {
-    let mut file = fs::File::create(path)?;
-    for line in contents.iter() {
-        let line = generate(line);
-        if let Some(line) = line {
-            write!(file, "{}\n", line)?;
-        }
-    }
-    Ok(())
-}
-
-fn generate(token: &Token) -> Option<String> {
+pub fn generate(token: &Token) -> Option<String> {
     match token.kind {
         TokenKind::FileStart => Some(format!("\\documentclass{{article}}\n\\begin{{document}}")),
         TokenKind::FileEnd => Some(format!("\\end{{document}}")),

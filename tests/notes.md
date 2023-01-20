@@ -1,3 +1,5 @@
+- baz
+- qux
 # Heading 1
 - baz
 - qux
@@ -12,7 +14,8 @@
 4. shart
 
 20. this
-21. is.
-22. awesome
+21. is. `x = 2`
+22. **blah** *hi*
+23. ~~strike~~
 
 ### This is my new heading
