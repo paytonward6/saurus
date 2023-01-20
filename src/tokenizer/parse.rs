@@ -11,7 +11,7 @@ pub fn run(file_str: &str, path: &PathBuf) {
     });
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TokenKind {
     FileStart,
     FileEnd,
@@ -43,6 +43,29 @@ impl Token {
             line_num,
         }
     }
+}
+
+#[derive(Debug)]
+pub struct Transpiler {
+    pub tokens: Vec<Token>,
+    pub stack: VecDeque<TokenKind>,
+}
+
+impl Transpiler {
+    fn new() -> Self {
+        let tokens: Vec<Token> = Vec::new();
+        let stack: VecDeque<TokenKind> = VecDeque::new();
+        Transpiler {
+            tokens,
+            stack,
+        }
+    }
+
+    fn add_item(&mut self, contents: Option<String>, kind: TokenKind, line_num: usize) {
+        self.tokens.push(Token::new(contents, kind.clone(), line_num));
+        self.stack.push_back(kind);
+    }
+
 }
 
 impl fmt::Display for Token {
@@ -92,7 +115,6 @@ fn tokenize(file_str: &str) -> Vec<Token> {
             tokens.push(Token::new(Some(line), Kind::UnorderedListItem('-'), i));
         } else if re::ordered_list(&line) {
             let (number, line) = re::replace_ordered_list(&line);
-            println!("{line}");
 
             #[deny(clippy::single_match)]
             if let Some(last) = stack.back() {
@@ -134,7 +156,6 @@ fn tokenize(file_str: &str) -> Vec<Token> {
     }
 
     stack.push_back(Kind::FileEnd);
-    println!("{:?}", stack);
     tokens.push(Token::new(None, Kind::FileEnd, usize::MAX));
     tokens
 }
@@ -179,8 +200,6 @@ mod re {
         let contents = cap.get(2).unwrap().as_str();
         (number.trim().parse().unwrap(), contents.to_string())
     }
-
-    // TODO: Capture for ordered list \(\d.\)\(\s*.*\)
 
     pub fn blank(line: &str) -> bool {
         line.is_empty()
