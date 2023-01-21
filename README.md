@@ -1,4 +1,3 @@
-Not working for:
-- baz
-- qux
-# Heading 1
+# saurus
+
+Markdown &rarr; LaTeX transpiler
