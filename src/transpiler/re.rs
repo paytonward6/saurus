@@ -1,7 +1,13 @@
 use regex::Regex;
 use regex::Captures;
+
 pub fn heading(line: &str) -> bool {
     let re: Regex = Regex::new(r"^\s*#").unwrap();
+    re.is_match(line)
+}
+
+pub fn normal(line: &str) -> bool {
+    let re: Regex = Regex::new(r"^\s*[^#\-\+`]").unwrap();
     re.is_match(line)
 }
 
@@ -39,6 +45,21 @@ pub fn replace_ordered_list(line: &str) -> (usize, String) {
     (number.trim().parse().unwrap(), contents.to_string())
 }
 
+pub fn code_block(line: &str) -> bool {
+    let re = Regex::new(r"\s*```").unwrap();
+    re.is_match(line)
+}
+
+pub fn replace_code_block(line: &str) -> Option<String> {
+    let re = Regex::new(r"\s*```(.*)").unwrap();
+    let cap = re.captures(line);
+    if let Some(cap) = cap {
+        let contents = cap.get(1).unwrap().as_str();
+        return Some(contents.to_string())
+    }
+    None
+}
+
 pub fn blank(line: &str) -> bool {
     line.is_empty()
 }
@@ -59,15 +80,17 @@ pub fn italicize(line: &mut String) -> String {//Option<String>
 
 // NOT TO BE USED YET
 pub fn inline_code(line: &mut String) -> String {//Option<String> 
-    let re = Regex::new(r"`(.*)`").unwrap();
+    let re = Regex::new(r"`([^`])`").unwrap();
     re.replace_all(line, |caps: &Captures| {
-        format!("\\inline_code{{{}}}", &caps[1])
+        format!("\\verb|{}|", &caps[1])
     }).to_string()
 }
 
+
+/// uses the "ulem" package
 pub fn strike_out(line: &mut String) -> String {//Option<String> 
     let re = Regex::new(r"\~\~([^\~]*)\~\~").unwrap();
     re.replace_all(line, |caps: &Captures| {
-        format!("\\strike{{{}}}", &caps[1])
+        format!("\\sout{{{}}}", &caps[1])
     }).to_string()
 }

@@ -1,20 +1,38 @@
 \documentclass{article}
-\begin{document}
-\begin{itemize}
-    \item baz
-    \item qux
-\end{itemize}
 
+\usepackage{geometry}
+\usepackage{ulem}
+\usepackage{listings}
+
+    \usepackage{xcolor}
+    \definecolor{codegreen}{rgb}{0, 0.6, 0}
+    \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+    \lstdefinestyle{myStyle}{
+        keywordstyle=\color{blue},
+        identifierstyle=\color{violet},
+        commentstyle=\color{codegreen},
+        backgroundcolor=\color{backcolour},
+        %basicstyle=\normal,
+        showspaces=false,
+        showstringspaces=false,
+        keepspaces=true,
+        extendedchars=true,
+        %numbers=left,
+    }
+\begin{document}
 \section{Heading 1}
 \begin{itemize}
     \item baz
     \item qux
 \end{itemize}
 
-\begin{itemize}
-    \item foo
-    \item bar
-\end{itemize}
+\begin{lstlisting}[language=python, style=myStyle]
+for i in range(10):
+    print(i)
+x = 2
+def my_func(blah):
+    return blah + 1
+\end{lstlisting}
 
 \subsection{Heading 2}
 \begin{enumerate}
@@ -27,9 +45,9 @@
 \begin{enumerate}
     \setcounter{enumi}{19}
     \item  this
-    \item  is. \inline_code{x = 2}
+    \item  is. `x = 2`
     \item  \textbf{blah} \textit{hi}
-    \item  \strike{strike}
+    \item  \sout{strike}
 \end{enumerate}
 
 \subsubsection{This is my new heading}

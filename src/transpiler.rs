@@ -4,7 +4,8 @@ use std::fs;
 use std::io::{Error, Write};
 use std::path::PathBuf;
 
-use crate::tokenizer::{latexer, re};
+pub mod latexer;
+pub mod re;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TokenKind {
@@ -19,6 +20,10 @@ pub enum TokenKind {
     BeginOrderedList(usize),
     OrderedListItem(usize),
     EndOrderedList,
+
+    BeginCodeBlock(String),
+    BodyCodeBlock,
+    EndCodeBlock,
 
     Blank,
 }
@@ -93,11 +98,16 @@ impl Transpiler {
                 self.add_structure(Some(line), Kind::Heading(num_hash), line_number);
             } else if re::unordered_list(&line) {
                 self.add_unordered_list(line, line_number);
-            } else if re::ordered_list(&line) {
-                self.add_ordered_list(line, line_number);
             } else if re::blank(&line) {
                 self.close_list(line_number);
+            } else if re::ordered_list(&line) {
+                self.add_ordered_list(line, line_number);
+            } else if re::code_block(&line) {
+                self.add_code_block(line, line_number);
+            } else if re::normal(&line) {
+                self.normal(line, line_number);
             }
+
         }
 
         match self.stack.back() {
@@ -166,10 +176,37 @@ impl Transpiler {
         }
     }
 
+    fn add_code_block(&mut self, line: String, line_number: usize) {
+        let language = re::replace_code_block(&line);
+        if let Some(last) = self.stack.back() {
+            match last {
+                TokenKind::BodyCodeBlock | TokenKind::BeginCodeBlock(_) => {
+                    self.add_structure(None, TokenKind::EndCodeBlock, line_number);
+                }
+                _ => {
+                    self.add_structure(None, TokenKind::BeginCodeBlock(language.unwrap()), line_number);
+                }
+            }
+        }
+    }
+
+    fn normal(&mut self, line: String, line_number: usize) {
+        if let Some(last) = self.stack.back() {
+            match last {
+                TokenKind::BeginCodeBlock(_) | TokenKind::BodyCodeBlock => {
+                    self.add_structure(Some(line), TokenKind::BodyCodeBlock, line_number);
+                }
+                _ => ()
+            }
+        }
+    }
+
     pub fn write(&self, path: &PathBuf) -> Result<(), Error> {
         let mut file = fs::File::create(path)?;
+        write!(file, "{}\n", latexer::documentclass())?;
+        write!(file, "{}\n", latexer::packages())?;
         for line in self.tokens.iter() {
-            let line = latexer::generate(line);
+            let line = latexer::body(line);
             if let Some(line) = line {
                 write!(file, "{}\n", line)?;
             }
