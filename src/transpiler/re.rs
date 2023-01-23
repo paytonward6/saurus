@@ -8,7 +8,7 @@ use regex::Captures;
 /// assert!(re::heading("## Heading 2"));
 /// ```
 pub fn heading(line: &str) -> bool {
-    let re: Regex = Regex::new(r"^\s*#*").unwrap();
+    let re: Regex = Regex::new(r"^\s*#+").unwrap();
     re.is_match(line)
 }
 
@@ -40,7 +40,7 @@ pub fn normal(line: &str) -> bool {
 /// assert_eq!(contents4, "Heading 4");
 ///```
 pub fn parse_heading(line: &str) -> (usize, String) {
-    let re: Regex = Regex::new(r"#\s*").unwrap();
+    let re: Regex = Regex::new(r"^#+\s*").unwrap();
     let line = line.trim();
     let first = line.find(' ');
     (
@@ -147,6 +147,17 @@ pub fn italicize(line: &mut String) -> String {//Option<String>
 
 ///```
 /// use saurus::transpiler::re;
+/// assert_eq!(re::bold_italicize(&mut "***italicize me***".to_string()), r"\textbf{\textit{italicize me}}".to_string());
+///```
+pub fn bold_italicize(line: &mut String) -> String {//Option<String> 
+    let re = Regex::new(r"\*\*\*([^\*]*)\*\*\*").unwrap();
+    re.replace_all(line, |caps: &Captures| {
+        format!("\\textbf{{\\textit{{{}}}}}", &caps[1])
+    }).to_string()
+}
+
+///```
+/// use saurus::transpiler::re;
 /// assert_eq!(re::links(&mut "[saurus](https://github.com/paytonward6/saurus)".to_string()), r"\href{https://github.com/paytonward6/saurus}{saurus}".to_string());
 ///```
 pub fn links(line: &mut String) -> String {
@@ -161,8 +172,10 @@ pub fn links(line: &mut String) -> String {
 /// assert_eq!(re::inline_code(&mut "`let x = 2;`".to_string()), r"\verb|let x = 2;|".to_string());
 ///```
 pub fn inline_code(line: &mut String) -> String {//Option<String> 
-    let re = Regex::new(r"`([^`]*)`").unwrap();
+    //let re = Regex::new(r"`([^`]*)`").unwrap();
+    let re = Regex::new(r"`([^`]+)`").unwrap();
     re.replace_all(line, |caps: &Captures| {
+        println!("{}", &caps[1]);
         format!("\\verb|{}|", &caps[1])
     }).to_string()
 }
