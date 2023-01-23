@@ -25,6 +25,8 @@ pub enum TokenKind {
     BodyCodeBlock,
     EndCodeBlock,
 
+    Text,
+
     Blank,
 }
 
@@ -194,9 +196,11 @@ impl Transpiler {
         if let Some(last) = self.stack.back() {
             match last {
                 TokenKind::BeginCodeBlock(_) | TokenKind::BodyCodeBlock => {
-                    self.add_structure(Some(line), TokenKind::BodyCodeBlock, line_number);
+                    self.tokens.push(Token::new(Some(line), TokenKind::BodyCodeBlock, line_number));
                 }
-                _ => ()
+                _ => {
+                    self.tokens.push(Token::new(Some(line), TokenKind::Text, line_number));
+                }
             }
         }
     }
@@ -219,6 +223,7 @@ impl Transpiler {
         *line = re::italicize(line);
         *line = re::inline_code(line);
         *line = re::strike_out(line);
+        *line = re::symbols(line);
         line.to_string()
     }
 }

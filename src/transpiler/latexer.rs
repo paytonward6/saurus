@@ -18,6 +18,7 @@ pub fn body(token: &Token) -> Option<String> {
     match &token.kind {
         TokenKind::FileStart => Some(format!("\\begin{{document}}")),
         TokenKind::FileEnd => Some(format!("\\end{{document}}")),
+        TokenKind::Text => Some(token.contents.as_ref().unwrap().to_string()),
         TokenKind::Heading(level) => match level {
             1 => Some(format!("\\section{{{}}}", token.contents.as_ref().unwrap())),
             2 => Some(format!(

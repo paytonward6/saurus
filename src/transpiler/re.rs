@@ -78,7 +78,6 @@ pub fn italicize(line: &mut String) -> String {//Option<String>
     }).to_string()
 }
 
-// NOT TO BE USED YET
 pub fn inline_code(line: &mut String) -> String {//Option<String> 
     let re = Regex::new(r"`([^`])`").unwrap();
     re.replace_all(line, |caps: &Captures| {
@@ -86,6 +85,10 @@ pub fn inline_code(line: &mut String) -> String {//Option<String>
     }).to_string()
 }
 
+pub fn symbols(line: &mut String) -> String {//Option<String> 
+    let re = Regex::new(r"=>").unwrap();
+    re.replace_all(line, "$\\rightarrow$").to_string()
+}
 
 /// uses the "ulem" package
 pub fn strike_out(line: &mut String) -> String {//Option<String> 
