@@ -3,8 +3,9 @@
 \usepackage{geometry}
 \usepackage{ulem}
 \usepackage{listings}
+\usepackage{hyperref}
+\usepackage{xcolor}
 
-    \usepackage{xcolor}
     \definecolor{codegreen}{rgb}{0, 0.6, 0}
     \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
     \lstdefinestyle{myStyle}{
@@ -18,6 +19,13 @@
         keepspaces=true,
         extendedchars=true,
         %numbers=left,
+    }
+
+    \hypersetup{
+        colorlinks=true,
+        linkcolor=blue,
+        filecolor=magenta,
+        urlcolor=blue,
     }
 \begin{document}
 \section{Heading 1}
@@ -52,4 +60,5 @@ def my_func(blah):
 
 \subsubsection{This is my new heading}
 \subsubsection{Another heading}
+test \href{https://duckduckgo.com}{link}
 \end{document}

@@ -1,5 +1,5 @@
 use crate::transpiler::{Token, TokenKind};
-const PACKAGES: [&str; 3] = ["geometry", "ulem", "listings"];
+const PACKAGES: [&str; 5] = ["geometry", "ulem", "listings", "hyperref", "xcolor"];
 
 pub fn packages() -> String {
     let mut packages = String::new();
@@ -52,9 +52,8 @@ pub fn body(token: &Token) -> Option<String> {
 }
 
 pub fn package_customizations() -> &'static str {
-    const LISTINGS: &str = 
+    const CUSTOMS: &str = 
     r"
-    \usepackage{xcolor}
     \definecolor{codegreen}{rgb}{0, 0.6, 0}
     \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
     \lstdefinestyle{myStyle}{
@@ -68,6 +67,13 @@ pub fn package_customizations() -> &'static str {
         keepspaces=true,
         extendedchars=true,
         %numbers=left,
+    }
+
+    \hypersetup{
+        colorlinks=true,
+        linkcolor=blue,
+        filecolor=magenta,
+        urlcolor=blue,
     }";
-    LISTINGS
+    CUSTOMS
 }

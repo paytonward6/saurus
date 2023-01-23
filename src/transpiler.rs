@@ -224,6 +224,7 @@ impl Transpiler {
         *line = re::inline_code(line);
         *line = re::strike_out(line);
         *line = re::symbols(line);
+        *line = re::links(line);
         line.to_string()
     }
 }

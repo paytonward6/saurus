@@ -78,6 +78,13 @@ pub fn italicize(line: &mut String) -> String {//Option<String>
     }).to_string()
 }
 
+pub fn links(line: &mut String) -> String {
+    let re = Regex::new(r"\[([a-zA-Z:]*)\]\((https://.*)\)").unwrap();
+    re.replace_all(line, |caps: &Captures| {
+        format!("\\href{{{}}}{{{}}}", &caps[2], &caps[1])
+    }).to_string()
+}
+
 pub fn inline_code(line: &mut String) -> String {//Option<String> 
     let re = Regex::new(r"`([^`])`").unwrap();
     re.replace_all(line, |caps: &Captures| {
