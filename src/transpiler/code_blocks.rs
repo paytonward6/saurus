@@ -1,5 +1,8 @@
 use strum_macros::{Display, EnumString, IntoStaticStr};
 
+
+/// Languages that can be used by the "listings" LaTeX package.
+/// List of all languages can also be found at [TeXDoc](https://texdoc.org/serve/listings.pdf/0) on page 13
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[derive(Display, EnumString, IntoStaticStr)]  // strum macros.
 pub enum Languages {

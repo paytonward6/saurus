@@ -2,12 +2,15 @@ use crate::transpiler::{Token, TokenKind};
 
 const PACKAGES: [&str; 5] = ["geometry", "ulem", "listings", "hyperref", "xcolor"];
 
-pub fn packages() -> String {
+pub fn packages(contains_code_block: bool) -> String {
     let mut packages = String::new();
     for package in PACKAGES.into_iter() {
         packages.push_str(&format!("\\usepackage{{{}}}\n", package));
     }
-    packages.push_str(package_customizations());
+    if contains_code_block {
+        packages.push_str(code_block_customizations());
+    }
+    packages.push_str(hyperlink_customizations()); 
     packages
 }
 
@@ -52,7 +55,7 @@ pub fn body(token: &Token) -> Option<String> {
     }
 }
 
-pub fn package_customizations() -> &'static str {
+pub fn code_block_customizations() -> &'static str {
     const CUSTOMS: &str = 
     r"
     \definecolor{codegreen}{rgb}{0, 0.6, 0}
@@ -68,13 +71,18 @@ pub fn package_customizations() -> &'static str {
         keepspaces=true,
         extendedchars=true,
         %numbers=left,
-    }
+    }";
+    CUSTOMS
+}
 
+pub fn hyperlink_customizations() -> &'static str {
+    const HYPERLINK: &str = 
+    r"
     \hypersetup{
         colorlinks=true,
         linkcolor=blue,
         filecolor=magenta,
         urlcolor=blue,
     }";
-    CUSTOMS
+    HYPERLINK
 }

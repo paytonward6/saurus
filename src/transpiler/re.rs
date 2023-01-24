@@ -182,7 +182,6 @@ pub fn inline_code(line: &mut String) -> String {//Option<String>
     //let re = Regex::new(r"`([^`]*)`").unwrap();
     let re = Regex::new(r"`([^`]+)`").unwrap();
     re.replace_all(line, |caps: &Captures| {
-        println!("{}", &caps[1]);
         format!("\\verb|{}|", &caps[1])
     }).to_string()
 }

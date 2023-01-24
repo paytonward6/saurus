@@ -55,13 +55,14 @@ impl Token {
 pub struct Transpiler {
     pub tokens: Vec<Token>,
     pub stack: VecDeque<TokenKind>,
+    pub contains_code_block: bool,
 }
 
 impl Transpiler {
     pub fn new() -> Self {
         let tokens: Vec<Token> = Vec::new();
         let stack: VecDeque<TokenKind> = VecDeque::new();
-        Transpiler { tokens, stack }
+        Transpiler { tokens, stack,  contains_code_block: false}
     }
 
     fn add_structure(&mut self, contents: Option<String>, kind: TokenKind, line_num: usize) {
@@ -191,6 +192,7 @@ impl Transpiler {
                 }
                 _ => {
                     self.add_structure(None, TokenKind::BeginCodeBlock(language.unwrap()), line_number);
+                    self.contains_code_block = true;
                 }
             }
         }
@@ -212,7 +214,7 @@ impl Transpiler {
     pub fn write(&self, path: &PathBuf) -> Result<(), Error> {
         let mut file = fs::File::create(path)?;
         write!(file, "{}\n", latexer::documentclass())?;
-        write!(file, "{}\n", latexer::packages())?;
+        write!(file, "{}\n", latexer::packages(self.contains_code_block))?;
         for line in self.tokens.iter() {
             let line = latexer::body(line);
             if let Some(line) = line {
