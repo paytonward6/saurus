@@ -182,9 +182,10 @@ pub fn bold_italicize(line: &mut String) -> String {//Option<String>
 ///```
 /// use saurus::transpiler::re;
 /// assert_eq!(re::links(&mut "[saurus](https://github.com/paytonward6/saurus)".to_string()), r"\href{https://github.com/paytonward6/saurus}{saurus}".to_string());
+/// assert_eq!(re::links(&mut "[indentfirst](https://ctan.org/pkg/indentfirst) text afterwards".to_string()), r"\href{https://ctan.org/pkg/indentfirst}{indentfirst} text afterwards".to_string());
 ///```
 pub fn links(line: &mut String) -> String {
-    let re = Regex::new(r"\[([a-zA-Z:]*)\]\((https://.*)\)").unwrap();
+    let re = Regex::new(r"\[([a-zA-Z:][^\]]*)\]\((https://[^\)\(]*)\)").unwrap();
     re.replace_all(line, |caps: &Captures| {
         format!("\\href{{{}}}{{{}}}", &caps[2], &caps[1])
     }).to_string()
@@ -205,9 +206,10 @@ pub fn inline_code(line: &mut String) -> String {//Option<String>
 ///```
 /// use saurus::transpiler::re;
 /// assert_eq!(re::symbols(&mut "=>".to_string()), r"$\rightarrow$".to_string());
+/// assert_eq!(re::symbols(&mut "&rarr;".to_string()), r"$\rightarrow$".to_string());
 ///```
 pub fn symbols(line: &mut String) -> String {//Option<String> 
-    let re = Regex::new(r"=>").unwrap();
+    let re = Regex::new(r"=>|&rarr;").unwrap();
     re.replace_all(line, "$\\rightarrow$").to_string()
 }
 
