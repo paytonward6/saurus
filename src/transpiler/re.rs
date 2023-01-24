@@ -1,6 +1,8 @@
 use regex::Regex;
 use regex::Captures;
 
+use crate::transpiler::code_blocks::{Languages};
+
 /// ```
 /// use saurus::transpiler::re;
 ///
@@ -107,12 +109,16 @@ pub fn code_block(line: &str) -> bool {
 /// use saurus::transpiler::re;
 /// assert_eq!(re::replace_code_block(&"```python".to_string()).unwrap(), r"python".to_string());
 ///```
-pub fn replace_code_block(line: &str) -> Option<String> {
-    let re = Regex::new(r"\s*```(.*)").unwrap();
+pub fn replace_code_block(line: &str) -> Option<Languages> {
+    let re = Regex::new(r"\s*```(.+)").unwrap();
     let cap = re.captures(line);
     if let Some(cap) = cap {
-        let contents = cap.get(1).unwrap().as_str();
-        return Some(contents.to_string())
+        let contents: &str = cap.get(1).unwrap().as_str();
+        let result: Languages = contents.parse().unwrap_or_else(|_| {
+            println!("Code block: Language \"{}\" not found. Using default of \"Language::C\"", contents);
+            Languages::C
+        });
+        return Some(result)
     }
     None
 }
@@ -200,3 +206,4 @@ pub fn strike_out(line: &mut String) -> String {//Option<String>
         format!("\\sout{{{}}}", &caps[1])
     }).to_string()
 }
+

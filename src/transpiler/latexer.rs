@@ -1,4 +1,5 @@
 use crate::transpiler::{Token, TokenKind};
+
 const PACKAGES: [&str; 5] = ["geometry", "ulem", "listings", "hyperref", "xcolor"];
 
 pub fn packages() -> String {
@@ -44,7 +45,7 @@ pub fn body(token: &Token) -> Option<String> {
             Some(format!("    \\item {}", token.contents.as_ref().unwrap()))
         }
         TokenKind::EndOrderedList => Some(format!("\\end{{enumerate}}\n")),
-        TokenKind::BeginCodeBlock(language) => Some(format!("\\begin{{lstlisting}}[language={}, style=myStyle]", language)),
+        TokenKind::BeginCodeBlock(language) => Some(format!("\\begin{{lstlisting}}[language={}, style=myStyle]", <&crate::transpiler::code_blocks::Languages as Into<&str>>::into(language))),
         TokenKind::BodyCodeBlock => Some(token.contents.as_ref().unwrap().to_string()),
         TokenKind::EndCodeBlock => Some(format!("\\end{{lstlisting}}\n")),
         _ => None,

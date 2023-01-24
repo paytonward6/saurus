@@ -2,12 +2,17 @@
 - baz
 - qux
 
-```python
-for i in range(10):
-    print(i)
-x = 2
-def my_func(blah):
-    return blah + 1
+```c
+int main() {
+    printf("%d", i);
+}
+```
+
+```test
+% derived parameters
+k = 1/SR;                    % time step
+coef = 2-k^2*(2*pi*f0)^2;    % scheme update coefficient
+NF = floor(TF*SR);           % duration of simulation (samples)
 ```
 
 ## Heading 2

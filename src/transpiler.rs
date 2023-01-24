@@ -5,9 +5,12 @@ use std::io::{Error, Write};
 use std::path::PathBuf;
 
 pub mod latexer;
+pub mod code_blocks;
 pub mod re;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+type Languages = code_blocks::Languages;
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum TokenKind {
     FileStart,
     FileEnd,
@@ -21,7 +24,7 @@ pub enum TokenKind {
     OrderedListItem(usize),
     EndOrderedList,
 
-    BeginCodeBlock(String),
+    BeginCodeBlock(Languages),
     BodyCodeBlock,
     EndCodeBlock,
 
@@ -29,6 +32,7 @@ pub enum TokenKind {
 
     Blank,
 }
+
 
 #[derive(Debug)]
 pub struct Token {
@@ -62,7 +66,7 @@ impl Transpiler {
 
     fn add_structure(&mut self, contents: Option<String>, kind: TokenKind, line_num: usize) {
         self.tokens
-            .push(Token::new(contents, kind.clone(), line_num));
+            .push(Token::new(contents, kind, line_num));
         self.stack.push_back(kind);
     }
 
