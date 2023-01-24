@@ -1,6 +1,6 @@
 use crate::transpiler::{Token, TokenKind};
 
-const PACKAGES: [&str; 5] = ["geometry", "ulem", "listings", "hyperref", "xcolor"];
+const PACKAGES: [&str; 6] = ["geometry", "ulem", "listings", "hyperref", "xcolor", "indentfirst"];
 
 pub fn packages(contains_code_block: bool) -> String {
     let mut packages = String::new();
