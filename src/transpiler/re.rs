@@ -107,7 +107,8 @@ pub fn code_block(line: &str) -> bool {
 
 ///```
 /// use saurus::transpiler::re;
-/// assert_eq!(re::replace_code_block(&"```python".to_string()).unwrap(), r"python".to_string());
+/// use saurus::transpiler::code_blocks::Languages;
+/// assert_eq!(re::replace_code_block(&"```python".to_string()).unwrap(), Languages::Python);
 ///```
 pub fn replace_code_block(line: &str) -> Option<Languages> {
     let re = Regex::new(r"\s*```(.+)").unwrap();
