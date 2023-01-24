@@ -1,3 +1,8 @@
+> My
+> Block
+> Quote
+> Two
+
 # Heading 1
 - baz
 - qux
@@ -8,12 +13,18 @@ int main() {
 }
 ```
 
+this is a normal line
+
 ```test
 % derived parameters
 k = 1/SR;                    % time step
 coef = 2-k^2*(2*pi*f0)^2;    % scheme update coefficient
 NF = floor(TF*SR);           % duration of simulation (samples)
 ```
+> My
+> Block
+> Quote
+> One
 
 ## Heading 2
 
@@ -30,3 +41,9 @@ NF = floor(TF*SR);           % duration of simulation (samples)
 ### Another heading 
 
 test [link](https://duckduckgo.com)
+
+20. this
+21. is. `x = 2`
+22. **blah** *hi*
+23. ~~strike~~
+

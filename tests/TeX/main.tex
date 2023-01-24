@@ -27,6 +27,17 @@
         urlcolor=blue,
     }
 \begin{document}
+ 
+    \setcounter{secnumdepth}{0}
+
+    
+\begin{quote}
+My\\
+Block\\
+Quote\\
+Two
+\end{quote}
+
 \section{Heading 1}
 \begin{itemize}
     \item baz
@@ -39,12 +50,21 @@ int main() {
 }
 \end{lstlisting}
 
+this is a normal line
+
 \begin{lstlisting}[language=c, style=myStyle]
 % derived parameters
 k = 1/SR;                    % time step
 coef = 2-k^2\textit{(2}pi*f0)^2;    % scheme update coefficient
 NF = floor(TF*SR);           % duration of simulation (samples)
 \end{lstlisting}
+
+\begin{quote}
+My\\
+Block\\
+Quote\\
+One
+\end{quote}
 
 \subsection{Heading 2}
 \begin{enumerate}
@@ -65,4 +85,13 @@ NF = floor(TF*SR);           % duration of simulation (samples)
 \subsubsection{This is my new heading}
 \subsubsection{Another heading}
 test \href{https://duckduckgo.com}{link}
+
+\begin{enumerate}
+    \setcounter{enumi}{19}
+    \item this
+    \item is. \verb|x = 2|
+    \item \textbf{blah} \textit{hi}
+    \item \sout{strike}
+\end{enumerate}
+
 \end{document}

@@ -1,15 +1,15 @@
 use regex::Regex;
 use regex::Captures;
 
-use crate::transpiler::code_blocks::{Languages};
+use crate::transpiler::code_blocks::Languages;
 
 /// ```
 /// use saurus::transpiler::re;
 ///
-/// assert!(re::heading("# Heading 1"));
-/// assert!(re::heading("## Heading 2"));
+/// assert!(re::is_heading("# Heading 1"));
+/// assert!(re::is_heading("## Heading 2"));
 /// ```
-pub fn heading(line: &str) -> bool {
+pub fn is_heading(line: &str) -> bool {
     let re: Regex = Regex::new(r"^\s*#+").unwrap();
     re.is_match(line)
 }
@@ -17,16 +17,16 @@ pub fn heading(line: &str) -> bool {
 /// ```
 /// use saurus::transpiler::re;
 /// // NOT NORMAL
-/// assert!(!re::normal("- Unordered List"));
-/// assert!(!re::normal("+ Unordered List"));
-/// assert!(!re::normal("# Heading"));
-/// assert!(!re::normal("`inline code`"));
+/// assert!(!re::is_normal("- Unordered List"));
+/// assert!(!re::is_normal("+ Unordered List"));
+/// assert!(!re::is_normal("# Heading"));
+/// assert!(!re::is_normal("`inline code`"));
 ///
 /// // NORMAL
-/// assert!(re::normal("Regular text"));
-/// assert!(re::normal("!Regular with exclamation"));
+/// assert!(re::is_normal("Regular text"));
+/// assert!(re::is_normal("!Regular with exclamation"));
 /// ```
-pub fn normal(line: &str) -> bool {
+pub fn is_normal(line: &str) -> bool {
     let re: Regex = Regex::new(r"^\s*[^#\-\+`]").unwrap();
     re.is_match(line)
 }
@@ -53,10 +53,10 @@ pub fn parse_heading(line: &str) -> (usize, String) {
 
 ///```
 /// use saurus::transpiler::re;
-/// assert!(re::unordered_list(r"- Contents here!"));
-/// assert!(re::unordered_list(r"+ Contents here!"));
+/// assert!(re::is_unordered_list(r"- Contents here!"));
+/// assert!(re::is_unordered_list(r"+ Contents here!"));
 ///```
-pub fn unordered_list(line: &str) -> bool {
+pub fn is_unordered_list(line: &str) -> bool {
     let re: Regex = Regex::new(r"^\s*[\-\+]\s*").unwrap();
     re.is_match(line)
 }
@@ -74,9 +74,9 @@ pub fn replace_unordered_list(line: &str) -> String {
 
 ///```
 /// use saurus::transpiler::re;
-/// assert!(re::ordered_list("7. Contents here!"));
+/// assert!(re::is_ordered_list("7. Contents here!"));
 ///```
-pub fn ordered_list(line: &str) -> bool {
+pub fn is_ordered_list(line: &str) -> bool {
     let re: Regex = Regex::new(r"^\s*\d*\.").unwrap();
     re.is_match(line)
 }
@@ -98,9 +98,9 @@ pub fn replace_ordered_list(line: &str) -> (usize, String) {
 
 ///```
 /// use saurus::transpiler::re;
-/// assert!(re::code_block(&"```python".to_string()));
+/// assert!(re::is_code_block(&"```python".to_string()));
 ///```
-pub fn code_block(line: &str) -> bool {
+pub fn is_code_block(line: &str) -> bool {
     let re = Regex::new(r"^\s*```").unwrap();
     re.is_match(line)
 }
@@ -124,13 +124,28 @@ pub fn replace_code_block(line: &str) -> Option<Languages> {
     None
 }
 
-///```
+/// ```
 /// use saurus::transpiler::re;
-/// assert!(re::blank(&mut "".to_string()));
-///```
-pub fn blank(line: &str) -> bool {
-    line.is_empty()
+/// assert!(!re::is_block_quote(&" > Initial spaces not allowed"));
+/// assert!(re::is_block_quote(&"> This is allowed"));
+/// ````
+pub fn is_block_quote(line: &str) -> bool {
+    let re = Regex::new(r"^>\s*").unwrap();
+    re.is_match(line)
 }
+
+/// ```
+/// use saurus::transpiler::re;
+/// assert_eq!(re::replace_block_quote(&"> this is my text"), "this is my text".to_string());
+/// ````
+pub fn replace_block_quote(line: &str) -> String {
+    let re = Regex::new(r"^>\s*(.*)").unwrap();
+    let cap = re.captures(line).unwrap();
+
+    let contents = cap.get(1).unwrap().as_str().trim();
+    contents.to_string()
+}
+
 ///```
 /// use saurus::transpiler::re;
 /// assert_eq!(re::bold(&mut "**bold me**".to_string()), r"\textbf{bold me}".to_string());
@@ -141,6 +156,7 @@ pub fn bold(line: &mut String) -> String {//Option<String>
         format!("\\textbf{{{}}}", &caps[1])
     }).to_string()
 }
+
 ///```
 /// use saurus::transpiler::re;
 /// assert_eq!(re::italicize(&mut "*italicize me*".to_string()), r"\textit{italicize me}".to_string());
@@ -206,4 +222,3 @@ pub fn strike_out(line: &mut String) -> String {//Option<String>
         format!("\\sout{{{}}}", &caps[1])
     }).to_string()
 }
-

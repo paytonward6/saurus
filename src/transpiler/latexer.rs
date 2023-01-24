@@ -20,9 +20,9 @@ pub fn documentclass() -> String {
 
 pub fn body(token: &Token) -> Option<String> {
     match &token.kind {
-        TokenKind::FileStart => Some(format!("\\begin{{document}}")),
+        TokenKind::FileStart => Some(format!("\\begin{{document}}\n {}", qol_customizations())),
         TokenKind::FileEnd => Some(format!("\\end{{document}}")),
-        TokenKind::Text => Some(token.contents.as_ref().unwrap().to_string()),
+        TokenKind::Text => Some(format!("{}\n", token.contents.as_ref().unwrap())),
         TokenKind::Heading(level) => match level {
             1 => Some(format!("\\section{{{}}}", token.contents.as_ref().unwrap())),
             2 => Some(format!(
@@ -35,11 +35,13 @@ pub fn body(token: &Token) -> Option<String> {
             )),
             _ => None,
         },
+
         TokenKind::BeginUnorderedList => Some(format!("\\begin{{itemize}}")),
         TokenKind::UnorderedListItem(_) => {
             Some(format!("    \\item {}", token.contents.as_ref().unwrap()))
         }
         TokenKind::EndUnorderedList => Some(format!("\\end{{itemize}}\n")),
+
         TokenKind::BeginOrderedList(num) => Some(format!(
             "\\begin{{enumerate}}\n    \\setcounter{{enumi}}{{{}}}",
             num - 1
@@ -48,9 +50,16 @@ pub fn body(token: &Token) -> Option<String> {
             Some(format!("    \\item {}", token.contents.as_ref().unwrap()))
         }
         TokenKind::EndOrderedList => Some(format!("\\end{{enumerate}}\n")),
+
         TokenKind::BeginCodeBlock(language) => Some(format!("\\begin{{lstlisting}}[language={}, style=myStyle]", <&crate::transpiler::code_blocks::Languages as Into<&str>>::into(language))),
         TokenKind::BodyCodeBlock => Some(token.contents.as_ref().unwrap().to_string()),
         TokenKind::EndCodeBlock => Some(format!("\\end{{lstlisting}}\n")),
+
+        TokenKind::BeginBlockQuote => Some(format!("\\begin{{quote}}")),
+        // Formatting for BlockQuote done in Transpiler
+        TokenKind::BodyBlockQuote => Some(format!("{}", token.contents.as_ref().unwrap())),
+        TokenKind::EndBlockQuote => Some(format!("\\end{{quote}}\n")),
+ 
         _ => None,
     }
 }
@@ -85,4 +94,13 @@ pub fn hyperlink_customizations() -> &'static str {
         urlcolor=blue,
     }";
     HYPERLINK
+}
+
+pub fn qol_customizations() -> &'static str {
+    const QOL: &str = 
+    r"
+\setcounter{secnumdepth}{0}
+
+    ";
+    QOL
 }
