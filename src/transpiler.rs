@@ -84,6 +84,7 @@ impl Transpiler {
         });
     }
 
+
     fn tokenize(&mut self, file_str: &str) {
         type Kind = TokenKind;
 
@@ -120,25 +121,39 @@ impl Transpiler {
         println!("{:#?}", self.tokens);
     }
 
-    fn close_structure(&mut self, line_num: usize) {
-        match self.stack.back() {
-            Some(TokenKind::BeginOrderedList(_)) => {
-                self.add_structure(None, TokenKind::EndOrderedList, line_num);
-            }
-            Some(TokenKind::BeginUnorderedList(num)) => {
-                self.add_structure(None, TokenKind::EndUnorderedList(*num), line_num);
-                self.open_unordered_lists -= 1;
-
-                while self.open_unordered_lists != 0  {
-                    self.add_structure(None, TokenKind::EndUnorderedList(0), usize::MAX);
-                    self.open_unordered_lists -= 1;
+    fn close_nested_lists(&mut self, line_number: usize) {
+        if let Some(last) = self.stack.back() {
+            match last {
+                TokenKind::BeginUnorderedList(_) => {
+                    self.tokens.push(Token::new(None, TokenKind::EndUnorderedList(0), line_number));
+                    self.stack.pop_back();
+                    self.close_nested_lists(line_number);
                 }
+                _ => ()
             }
-            Some(TokenKind::BeginBlockQuote) => {
-                self.format_last_line_block_quote();
-                self.add_structure(None, TokenKind::EndBlockQuote, line_num);
+        }
+    }
+
+    fn close_structure(&mut self, line_num: usize) {
+        if let Some(last) = self.stack.back() {
+            match last {
+                TokenKind::BeginOrderedList(_) => {
+                    self.add_structure(None, TokenKind::EndOrderedList, line_num);
+                }
+                TokenKind::BeginUnorderedList(num) => {
+                    self.add_structure(None, TokenKind::EndUnorderedList(*num), line_num);
+                    self.open_unordered_lists -= 1;
+                    while self.open_unordered_lists != 0  {
+                        self.add_structure(None, TokenKind::EndUnorderedList(0), usize::MAX);
+                        self.open_unordered_lists -= 1;
+                    }
+                }
+                TokenKind::BeginBlockQuote => {
+                    self.format_last_line_block_quote();
+                    self.add_structure(None, TokenKind::EndBlockQuote, line_num);
+                }
+                _ => (),
             }
-            _ => (),
         }
     }
 
@@ -173,8 +188,7 @@ impl Transpiler {
                         line_number,
                     ));
                     if line_number == self.num_lines {
-                        self.tokens.push(Token::new(None, TokenKind::EndUnorderedList(level), line_number));
-                        self.open_unordered_lists -= 1;
+                        self.close_structure(line_number);
                     }
                 }
             }
