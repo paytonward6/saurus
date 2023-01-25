@@ -63,13 +63,18 @@ pub fn is_unordered_list(line: &str) -> bool {
 
 ///```
 /// use saurus::transpiler::re;
-/// let contents = String::from("Contents here!");
-/// assert_eq!(re::replace_unordered_list(&mut "- Contents here!"), contents);
-/// assert_eq!(re::replace_unordered_list(&mut "+ Contents here!"), contents);
+/// let mut line = String::from("        - Contents here!");
+/// let (level, contents) = re::replace_unordered_list(&mut line);
+/// assert_eq!(level, 2);
+/// assert_eq!(contents, "Contents here!");
 ///```
-pub fn replace_unordered_list(line: &str) -> String {
-    let re: Regex = Regex::new(r"^\s*[\-\+]\s*").unwrap();
-    re.replace(line, "").to_string()
+pub fn replace_unordered_list(line: &str) -> (usize, String) {
+    let re: Regex = Regex::new(r"(^\s*)[\-\+]\s*").unwrap();
+    let first = line.find(|c: char| c == '-' || c == '+');
+    (
+        line.split_at(first.unwrap()).0.chars().into_iter().count() / 4,
+        re.replace_all(line, "").to_string(),
+    )
 }
 
 ///```

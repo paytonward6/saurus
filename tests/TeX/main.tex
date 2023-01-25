@@ -6,20 +6,6 @@
 \usepackage{hyperref}
 \usepackage{xcolor}
 
-    \definecolor{codegreen}{rgb}{0, 0.6, 0}
-    \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-    \lstdefinestyle{myStyle}{
-        keywordstyle=\color{blue},
-        identifierstyle=\color{violet},
-        commentstyle=\color{codegreen},
-        backgroundcolor=\color{backcolour},
-        %basicstyle=\normal,
-        showspaces=false,
-        showstringspaces=false,
-        keepspaces=true,
-        extendedchars=true,
-        %numbers=left,
-    }
     \hypersetup{
         colorlinks=true,
         linkcolor=blue,
@@ -28,70 +14,35 @@
     }
 \begin{document}
  
-    \setcounter{secnumdepth}{0}
+\setcounter{secnumdepth}{0}
 
     
-\begin{quote}
-My\\
-Block\\
-Quote\\
-Two
-\end{quote}
-
 \section{Heading 1}
 \begin{itemize}
-    \item baz
-    \item qux
+    \item one
+\begin{itemize}
+    \item nested 1
+    \item nested 2
+\begin{itemize}
+    \item nested 1
+    \item nested 2
+\begin{itemize}
+    \item nested 1
+    \item nested 2
 \end{itemize}
 
-\begin{lstlisting}[language=c, style=myStyle]
-int main() {
-    printf("%d", i);
-}
-\end{lstlisting}
+    \item two
+    \item three
+\end{itemize}
 
-this is a normal line
+\end{itemize}
 
-\begin{lstlisting}[language=c, style=myStyle]
-% derived parameters
-k = 1/SR;                    % time step
-coef = 2-k^2\textit{(2}pi*f0)^2;    % scheme update coefficient
-NF = floor(TF*SR);           % duration of simulation (samples)
-\end{lstlisting}
+\end{itemize}
 
-\begin{quote}
-My\\
-Block\\
-Quote\\
-One
-\end{quote}
+\begin{itemize}
+    \item two
+    \item three
+\end{itemize}
 
-\subsection{Heading 2}
-\begin{enumerate}
-    \setcounter{enumi}{0}
-    \item foo
-    \item bar
-    \item baz
-\end{enumerate}
-
-\begin{enumerate}
-    \setcounter{enumi}{19}
-    \item this
-    \item is. \verb|x = 2|
-    \item \textbf{blah} \textit{hi}
-    \item \sout{strike}
-\end{enumerate}
-
-\subsubsection{This is my new heading}
-\subsubsection{Another heading}
-test \href{https://duckduckgo.com}{link}
-
-\begin{enumerate}
-    \setcounter{enumi}{19}
-    \item this
-    \item is. \verb|x = 2|
-    \item \textbf{blah} \textit{hi}
-    \item \sout{strike}
-\end{enumerate}
-
+\subsection{Hi}
 \end{document}

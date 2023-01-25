@@ -36,11 +36,11 @@ pub fn body(token: &Token) -> Option<String> {
             _ => None,
         },
 
-        TokenKind::BeginUnorderedList => Some(format!("\\begin{{itemize}}")),
-        TokenKind::UnorderedListItem(_) => {
+        TokenKind::BeginUnorderedList(_) => Some(format!("\\begin{{itemize}}")),
+        TokenKind::UnorderedListItem(..) => {
             Some(format!("    \\item {}", token.contents.as_ref().unwrap()))
         }
-        TokenKind::EndUnorderedList => Some(format!("\\end{{itemize}}\n")),
+        TokenKind::EndUnorderedList(_) => Some(format!("\\end{{itemize}}\n")),
 
         TokenKind::BeginOrderedList(num) => Some(format!(
             "\\begin{{enumerate}}\n    \\setcounter{{enumi}}{{{}}}",

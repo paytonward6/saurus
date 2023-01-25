@@ -16,9 +16,9 @@ pub enum TokenKind {
     FileEnd,
     Heading(usize),
 
-    BeginUnorderedList,
-    UnorderedListItem(char),
-    EndUnorderedList,
+    BeginUnorderedList(usize),
+    UnorderedListItem(char, usize),
+    EndUnorderedList(usize),
 
     BeginOrderedList(usize),
     OrderedListItem(usize),
@@ -60,13 +60,15 @@ pub struct Transpiler {
     pub tokens: Vec<Token>,
     pub stack: VecDeque<TokenKind>,
     pub contains_code_block: bool,
+    pub num_lines: usize,
+    pub open_unordered_lists: usize,
 }
 
 impl Transpiler {
     pub fn new() -> Self {
         let tokens: Vec<Token> = Vec::new();
         let stack: VecDeque<TokenKind> = VecDeque::new();
-        Transpiler { tokens, stack,  contains_code_block: false}
+        Transpiler { tokens, stack,  contains_code_block: false, num_lines: 0, open_unordered_lists: 0}
     }
 
     fn add_structure(&mut self, contents: Option<String>, kind: TokenKind, line_num: usize) {
@@ -86,6 +88,7 @@ impl Transpiler {
         type Kind = TokenKind;
 
         self.add_structure(None, Kind::FileStart, usize::MIN);
+        self.num_lines = file_str.lines().count();
 
         for (line_number, line) in file_str.lines().enumerate() {
             let mut line = line.to_string();
@@ -108,7 +111,13 @@ impl Transpiler {
                 self.normal(line, line_number);
             }
         }
+        while self.open_unordered_lists != 0  {
+            self.add_structure(None, TokenKind::EndUnorderedList(0), usize::MAX);
+            self.open_unordered_lists -= 1;
+        }
         self.end_of_file();
+        println!("{:?}", self.stack);
+        println!("{:#?}", self.tokens);
     }
 
     fn close_structure(&mut self, line_num: usize) {
@@ -116,8 +125,14 @@ impl Transpiler {
             Some(TokenKind::BeginOrderedList(_)) => {
                 self.add_structure(None, TokenKind::EndOrderedList, line_num);
             }
-            Some(TokenKind::BeginUnorderedList) => {
-                self.add_structure(None, TokenKind::EndUnorderedList, line_num);
+            Some(TokenKind::BeginUnorderedList(num)) => {
+                self.add_structure(None, TokenKind::EndUnorderedList(*num), line_num);
+                self.open_unordered_lists -= 1;
+
+                while self.open_unordered_lists != 0  {
+                    self.add_structure(None, TokenKind::EndUnorderedList(0), usize::MAX);
+                    self.open_unordered_lists -= 1;
+                }
             }
             Some(TokenKind::BeginBlockQuote) => {
                 self.format_last_line_block_quote();
@@ -129,40 +144,62 @@ impl Transpiler {
 
 
     fn add_unordered_list(&mut self, line: String, line_number: usize) {
-        let line = re::replace_unordered_list(&line);
+        let (level, line) = re::replace_unordered_list(&line);
 
         #[deny(clippy::single_match)]
-        if let Some(last) = self.stack.back() {
-            match last {
-                TokenKind::BeginUnorderedList => {
+        match self.tokens.last().unwrap().kind {
+            TokenKind::UnorderedListItem(_, num) => {
+                if num < level {
+                    self.add_structure(None, TokenKind::BeginUnorderedList(level), line_number);
+                    self.open_unordered_lists += 1;
+                    self.tokens.push(Token::new(
+                        Some(line),
+                        TokenKind::UnorderedListItem('-', level),
+                        line_number,
+                    ));
+                } else if num > level {
+                    self.tokens.push(Token::new(None, TokenKind::EndUnorderedList(level), line_number));
+                    self.open_unordered_lists -= 1;
+                    self.tokens.push(Token::new(
+                        Some(line),
+                        TokenKind::UnorderedListItem('-', level),
+                        line_number,
+                    ));
+                } else {
                     // TODO: ONLY PUTTING '-' FOR NOW
                     self.tokens.push(Token::new(
                         Some(line),
-                        TokenKind::UnorderedListItem('-'),
+                        TokenKind::UnorderedListItem('-', level),
                         line_number,
                     ));
+                    if line_number == self.num_lines {
+                        self.tokens.push(Token::new(None, TokenKind::EndUnorderedList(level), line_number));
+                        self.open_unordered_lists -= 1;
+                    }
                 }
-                _ => {
-                    self.add_structure(None, TokenKind::BeginUnorderedList, line_number);
-                    self.tokens.push(Token::new(
-                        Some(line),
-                        TokenKind::UnorderedListItem('-'),
-                        line_number,
-                    ));
-                }
+            }
+            _ => {
+                self.add_structure(None, TokenKind::BeginUnorderedList(level), line_number);
+                self.open_unordered_lists += 1;
+                self.tokens.push(Token::new(
+                    Some(line),
+                    TokenKind::UnorderedListItem('-', level),
+                    line_number,
+                ));
             }
         }
     }
 
     fn end_of_file(&mut self) {
         type Kind = TokenKind;
+        println!("{:?}", self.stack.back());
         match self.stack.back() {
             Some(Kind::FileStart) => self
                 .tokens
                 .push(Token::new(None, Kind::FileEnd, usize::MIN)),
-            Some(Kind::BeginUnorderedList) => {
+            Some(Kind::BeginUnorderedList(num)) => {
                 self.tokens
-                    .push(Token::new(None, Kind::EndUnorderedList, usize::MAX - 1))
+                    .push(Token::new(None, Kind::EndUnorderedList(*num), usize::MAX - 1))
             }
             Some(Kind::BeginOrderedList(_)) => {
                 self.tokens
