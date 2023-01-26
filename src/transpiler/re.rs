@@ -185,6 +185,7 @@ pub fn bold_italicize(line: &mut String) -> String {//Option<String>
 /// assert_eq!(re::links(&mut "[indentfirst](https://ctan.org/pkg/indentfirst) text afterwards".to_string()), r"\href{https://ctan.org/pkg/indentfirst}{indentfirst} text afterwards".to_string());
 ///```
 pub fn links(line: &mut String) -> String {
+    // \[.*\]([^\)]*) potentially fixes
     let re = Regex::new(r"\[([a-zA-Z:][^\]]*)\]\((https://[^\)\(]*)\)").unwrap();
     re.replace_all(line, |caps: &Captures| {
         format!("\\href{{{}}}{{{}}}", &caps[2], &caps[1])

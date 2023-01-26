@@ -3,6 +3,8 @@
 > Quote
 > Two
 
+links not working with: ()
+
 # Heading 1
 - baz
 - qux
@@ -40,7 +42,7 @@ NF = floor(TF*SR);           % duration of simulation (samples)
 ### This is my new heading
 ### Another heading 
 
-test [link](https://duckduckgo.com)
+test 
 
 20. this
 21. is. `x = 2`
