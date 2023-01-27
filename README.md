@@ -2,6 +2,8 @@
 
 Markdown &rarr; LaTeX transpiler
 
+Currently under major refactoring
+
 ## LaTeX packages required
 - [geometry](https://ctan.org/pkg/geometry): margins
 - [ulem](https://ctan.org/pkg/ulem): ~~strikeout~~ functionality
