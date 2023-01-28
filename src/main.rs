@@ -31,4 +31,6 @@ fn main() {
         let transpiler = Transpiler::new();
         let file_str = fs::read_to_string(input).expect("Unable to read from file!");
         transpiler.run(&file_str, &PathBuf::from(output));
+
+        println!("test");
 }
