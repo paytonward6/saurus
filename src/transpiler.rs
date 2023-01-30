@@ -7,6 +7,7 @@ use std::path::PathBuf;
 pub mod latexer;
 pub mod code_blocks;
 pub mod re;
+pub mod lexer;
 
 type Languages = code_blocks::Languages;
 

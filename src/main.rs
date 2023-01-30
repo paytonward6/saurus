@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use saurus::transpiler::Transpiler;
-use saurus::transpiler::re;
+use saurus::transpiler::{re, lexer};
 
 use clap::{arg, command, value_parser};
 
@@ -31,4 +31,9 @@ fn main() {
         let transpiler = Transpiler::new();
         let file_str = fs::read_to_string(input).expect("Unable to read from file!");
         transpiler.run(&file_str, &PathBuf::from(output));
+
+        let mut lex = lexer::Lexer {contents: vec![(lexer::Token::Text, "String".to_string())], number_of_lines: 0};
+
+    lex.tokenize(&file_str);
+    println!("{:#?}", lex);
 }
