@@ -8,6 +8,7 @@ pub mod latexer;
 pub mod code_blocks;
 pub mod re;
 pub mod lexer;
+pub mod parser;
 
 type Languages = code_blocks::Languages;
 
