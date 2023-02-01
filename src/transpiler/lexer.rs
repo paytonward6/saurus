@@ -3,7 +3,7 @@ pub enum Token {
     FileStart,
     FileEnd,
 
-    Heading,
+    Heading(usize),
 
     UnorderedList,
 
@@ -29,7 +29,10 @@ impl Lexer {
     pub fn new() -> Self {
         let tokens: Vec<(Token, Option<String>)> = Vec::new();
         let number_of_lines = 0;
-        Self {tokens, number_of_lines}
+        Self {
+            tokens,
+            number_of_lines,
+        }
     }
     pub fn tokenize(&mut self, file_str: &str) {
         self.tokens.push((Token::FileStart, None));
@@ -37,7 +40,8 @@ impl Lexer {
             let line = line.to_string();
             //let line = Transpiler::transpile_line(&mut line);
             if re::is_heading(&line) {
-                self.tokens.push((Token::Heading, Some(line)));
+                let (level, line) = re::parse_heading(&line);
+                self.tokens.push((Token::Heading(level), Some(line)));
             } else if re::is_unordered_list(&line) {
                 self.tokens.push((Token::UnorderedList, Some(line)));
             } else if line.is_empty() {
@@ -58,7 +62,9 @@ impl Lexer {
 
     pub fn is_group(kind: &Token) -> bool {
         match kind {
-            Token::UnorderedList | Token::OrderedList | Token::BlockQuote | Token::CodeBlock => true,
+            Token::UnorderedList | Token::OrderedList | Token::BlockQuote | Token::CodeBlock => {
+                true
+            }
             _ => false,
         }
     }

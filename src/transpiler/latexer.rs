@@ -1,6 +1,13 @@
 use crate::transpiler::{Token, TokenKind};
 
-const PACKAGES: [&str; 6] = ["geometry", "ulem", "listings", "hyperref", "xcolor", "indentfirst"];
+const PACKAGES: [&str; 6] = [
+    "geometry",
+    "ulem",
+    "listings",
+    "hyperref",
+    "xcolor",
+    "indentfirst",
+];
 
 pub fn packages(contains_code_block: bool) -> String {
     let mut packages = String::new();
@@ -10,7 +17,7 @@ pub fn packages(contains_code_block: bool) -> String {
     if contains_code_block {
         packages.push_str(code_block_customizations());
     }
-    packages.push_str(hyperlink_customizations()); 
+    packages.push_str(hyperlink_customizations());
     packages
 }
 
@@ -51,7 +58,10 @@ pub fn body(token: &Token) -> Option<String> {
         }
         TokenKind::EndOrderedList => Some(format!("\\end{{enumerate}}\n")),
 
-        TokenKind::BeginCodeBlock(language) => Some(format!("\\begin{{lstlisting}}[language={}, style=myStyle]", <&crate::transpiler::code_blocks::Languages as Into<&str>>::into(language))),
+        TokenKind::BeginCodeBlock(language) => Some(format!(
+            "\\begin{{lstlisting}}[language={}, style=myStyle]",
+            <&crate::transpiler::code_blocks::Languages as Into<&str>>::into(language)
+        )),
         TokenKind::BodyCodeBlock => Some(token.contents.as_ref().unwrap().to_string()),
         TokenKind::EndCodeBlock => Some(format!("\\end{{lstlisting}}\n")),
 
@@ -59,14 +69,13 @@ pub fn body(token: &Token) -> Option<String> {
         // Formatting for BlockQuote done in Transpiler
         TokenKind::BodyBlockQuote => Some(format!("{}", token.contents.as_ref().unwrap())),
         TokenKind::EndBlockQuote => Some(format!("\\end{{quote}}\n")),
- 
+
         _ => None,
     }
 }
 
 pub fn code_block_customizations() -> &'static str {
-    const CUSTOMS: &str = 
-    r"
+    const CUSTOMS: &str = r"
     \definecolor{codegreen}{rgb}{0, 0.6, 0}
     \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
     \lstdefinestyle{myStyle}{
@@ -85,8 +94,7 @@ pub fn code_block_customizations() -> &'static str {
 }
 
 pub fn hyperlink_customizations() -> &'static str {
-    const HYPERLINK: &str = 
-    r"
+    const HYPERLINK: &str = r"
     \hypersetup{
         colorlinks=true,
         linkcolor=blue,
@@ -97,8 +105,7 @@ pub fn hyperlink_customizations() -> &'static str {
 }
 
 pub fn qol_customizations() -> &'static str {
-    const QOL: &str = 
-    r"
+    const QOL: &str = r"
 \setcounter{secnumdepth}{0}
 
     ";

@@ -4,11 +4,12 @@ use std::fs;
 use std::io::{Error, Write};
 use std::path::PathBuf;
 
-pub mod latexer;
 pub mod code_blocks;
-pub mod re;
+pub mod latexer;
 pub mod lexer;
 pub mod parser;
+pub mod re;
+pub mod generator;
 
 type Languages = code_blocks::Languages;
 
@@ -39,7 +40,6 @@ pub enum TokenKind {
     Blank,
 }
 
-
 #[derive(Debug)]
 pub struct Token {
     pub contents: Option<String>,
@@ -68,12 +68,15 @@ impl Transpiler {
     pub fn new() -> Self {
         let tokens: Vec<Token> = Vec::new();
         let stack: VecDeque<TokenKind> = VecDeque::new();
-        Transpiler { tokens, stack,  contains_code_block: false}
+        Transpiler {
+            tokens,
+            stack,
+            contains_code_block: false,
+        }
     }
 
     fn add_structure(&mut self, contents: Option<String>, kind: TokenKind, line_num: usize) {
-        self.tokens
-            .push(Token::new(contents, kind, line_num));
+        self.tokens.push(Token::new(contents, kind, line_num));
         self.stack.push_back(kind);
     }
 
@@ -129,7 +132,6 @@ impl Transpiler {
         }
     }
 
-
     fn add_unordered_list(&mut self, line: String, line_number: usize) {
         let line = re::replace_unordered_list(&line);
 
@@ -178,7 +180,6 @@ impl Transpiler {
             _ => (),
         }
         self.add_structure(None, Kind::FileEnd, usize::MAX);
-
     }
 
     fn add_ordered_list(&mut self, line: String, line_number: usize) {
@@ -215,7 +216,11 @@ impl Transpiler {
                     self.add_structure(None, TokenKind::EndCodeBlock, line_number);
                 }
                 _ => {
-                    self.add_structure(None, TokenKind::BeginCodeBlock(language.unwrap()), line_number);
+                    self.add_structure(
+                        None,
+                        TokenKind::BeginCodeBlock(language.unwrap()),
+                        line_number,
+                    );
                     self.contains_code_block = true;
                 }
             }
@@ -228,11 +233,19 @@ impl Transpiler {
         if let Some(last) = self.stack.back() {
             match last {
                 TokenKind::BeginBlockQuote => {
-                    self.tokens.push(Token::new(Some(line), TokenKind::BodyBlockQuote, line_number));
+                    self.tokens.push(Token::new(
+                        Some(line),
+                        TokenKind::BodyBlockQuote,
+                        line_number,
+                    ));
                 }
                 _ => {
                     self.add_structure(None, TokenKind::BeginBlockQuote, line_number);
-                    self.tokens.push(Token::new(Some(line), TokenKind::BodyBlockQuote, line_number));
+                    self.tokens.push(Token::new(
+                        Some(line),
+                        TokenKind::BodyBlockQuote,
+                        line_number,
+                    ));
                 }
             }
         }
@@ -242,7 +255,7 @@ impl Transpiler {
         if let Some(token) = self.tokens.last_mut() {
             if let Some(token) = token.contents.as_mut() {
                 // remove trailing `\\` for last line of quote
-                token.truncate(token.len() - 2); 
+                token.truncate(token.len() - 2);
             }
         }
     }
@@ -251,10 +264,15 @@ impl Transpiler {
         if let Some(last) = self.stack.back() {
             match last {
                 TokenKind::BeginCodeBlock(_) | TokenKind::BodyCodeBlock => {
-                    self.tokens.push(Token::new(Some(line), TokenKind::BodyCodeBlock, line_number));
+                    self.tokens.push(Token::new(
+                        Some(line),
+                        TokenKind::BodyCodeBlock,
+                        line_number,
+                    ));
                 }
                 _ => {
-                    self.tokens.push(Token::new(Some(line), TokenKind::Text, line_number));
+                    self.tokens
+                        .push(Token::new(Some(line), TokenKind::Text, line_number));
                 }
             }
         }
