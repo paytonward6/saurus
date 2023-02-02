@@ -1,12 +1,22 @@
-# Heading 1
-
+## Heading 1
 - item 1
 - item 2
 - item 3
 
-- item 4
-- item 5
-- item 6
+1. item 1
+
+3. item 2
+4. item 3
+
+```ython
+for i in range(10):
+    print(i)
+```
+3. item 2
+4. item 3
+
+**blah**
 
 > this
-> it
+
+## Heading 2

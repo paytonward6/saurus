@@ -7,7 +7,7 @@ pub enum Token {
 
     UnorderedList,
 
-    OrderedList,
+    OrderedList(usize),
 
     CodeBlock,
 
@@ -22,6 +22,7 @@ pub enum Token {
 pub struct Lexer {
     pub tokens: Vec<(Token, Option<String>)>,
     pub number_of_lines: usize,
+    pub contains_code_block: bool,
 }
 
 use crate::transpiler::re;
@@ -29,9 +30,11 @@ impl Lexer {
     pub fn new() -> Self {
         let tokens: Vec<(Token, Option<String>)> = Vec::new();
         let number_of_lines = 0;
+        let contains_code_block = false;
         Self {
             tokens,
             number_of_lines,
+            contains_code_block,
         }
     }
     pub fn tokenize(&mut self, file_str: &str) {
@@ -47,8 +50,10 @@ impl Lexer {
             } else if line.is_empty() {
                 self.tokens.push((Token::Blank, None));
             } else if re::is_ordered_list(&line) {
-                self.tokens.push((Token::OrderedList, Some(line)));
+                let (number, line) = re::replace_ordered_list(&line);
+                self.tokens.push((Token::OrderedList(number), Some(line)));
             } else if re::is_code_block(&line) {
+                self.contains_code_block = true;
                 self.tokens.push((Token::CodeBlock, Some(line)));
             } else if re::is_block_quote(&line) {
                 self.tokens.push((Token::BlockQuote, Some(line)));
@@ -62,7 +67,7 @@ impl Lexer {
 
     pub fn is_group(kind: &Token) -> bool {
         match kind {
-            Token::UnorderedList | Token::OrderedList | Token::BlockQuote | Token::CodeBlock => {
+            Token::UnorderedList | Token::OrderedList(_) | Token::BlockQuote | Token::CodeBlock => {
                 true
             }
             _ => false,

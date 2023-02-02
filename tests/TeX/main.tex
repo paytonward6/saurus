@@ -7,6 +7,20 @@
 \usepackage{xcolor}
 \usepackage{indentfirst}
 
+    \definecolor{codegreen}{rgb}{0, 0.6, 0}
+    \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+    \lstdefinestyle{myStyle}{
+        keywordstyle=\color{blue},
+        identifierstyle=\color{violet},
+        commentstyle=\color{codegreen},
+        backgroundcolor=\color{backcolour},
+        %basicstyle=\normal,
+        showspaces=false,
+        showstringspaces=false,
+        keepspaces=true,
+        extendedchars=true,
+        %numbers=left,
+    }
     \hypersetup{
         colorlinks=true,
         linkcolor=blue,
@@ -17,23 +31,41 @@
  
 \setcounter{secnumdepth}{0}
 
-    
-\section{Heading 1}
+\subsection{Heading 1}
+
 \begin{itemize}
+    \item - item 1
+    \item - item 2
+    \item - item 3
+\end{itemize}
+
+\begin{enumerate}
+    \setcounter{enumi}{0}
     \item item 1
+\end{enumerate}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
     \item item 2
     \item item 3
-\end{itemize}
+\end{enumerate}
 
-\begin{itemize}
-    \item item 4
-    \item item 5
-    \item item 6
-\end{itemize}
+\begin{lstlisting}[language=python, style=myStyle]
+for i in range(10):
+    print(i)
+\end{lstlisting}
 
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item item 2
+    \item item 3
+\end{enumerate}
+
+\textbf{blah}
 \begin{quote}
-this\\
-it
+    this
 \end{quote}
+
+\subsection{Heading 2}
 
 \end{document}

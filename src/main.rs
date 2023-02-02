@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::PathBuf;
 
-use saurus::transpiler::Transpiler;
-use saurus::transpiler::{lexer, parser, generator};
+use saurus::transpiler;
+use saurus::transpiler::{generator, lexer, parser};
 
 use clap::{arg, command, value_parser};
 
@@ -66,15 +66,6 @@ fn main() {
     //    ],
     //    number_of_lines: 4,
     //};
-    let mut lex = lexer::Lexer::new();
-    lex.tokenize(&file_str);
-    //println!("{:#?}", lex);
 
-    let mut parse = parser::Parser::from(lex);
-    parse.run();
-    println!("{:#?}", parse.results);
-
-    for line in parse.results.into_iter()  {
-        println!("{:?}", generator::generate_line(line));
-    }
+    transpiler::run(&file_str, output);
 }
