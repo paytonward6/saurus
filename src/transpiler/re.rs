@@ -105,8 +105,7 @@ pub fn is_code_block(line: &str) -> bool {
 
 ///```
 /// use saurus::transpiler::re;
-/// use saurus::transpiler::code_blocks::Languages;
-/// assert_eq!(re::replace_code_block(&"```python".to_string()).unwrap(), Languages::Python);
+/// assert_eq!(re::replace_code_block(&"```python".to_string()).unwrap(), "python".to_string());
 ///```
 pub fn replace_code_block(line: &str) -> Option<String> {
     let re = Regex::new(r"\s*```(.+)").unwrap();
@@ -205,11 +204,19 @@ pub fn inline_code(line: &mut String) -> String {
 /// use saurus::transpiler::re;
 /// assert_eq!(re::symbols(&mut "=>".to_string()), r"$\rightarrow$".to_string());
 /// assert_eq!(re::symbols(&mut "&rarr;".to_string()), r"$\rightarrow$".to_string());
+/// assert_eq!(re::symbols(&mut "$123".to_string()), r"\$123".to_string());
+/// assert_eq!(re::symbols(&mut r"$\frac{1}{2}$".to_string()), r"$\frac{1}{2}$".to_string());
+/// assert_eq!(re::symbols(&mut r"You & Me".to_string()), r"You \& Me".to_string());
+/// assert_eq!(re::symbols(&mut r"$Me \& You$".to_string()), r"$Me \& You$".to_string());
 ///```
 pub fn symbols(line: &mut String) -> String {
     //Option<String>
-    let re = Regex::new(r"=>|&rarr;").unwrap();
-    re.replace_all(line, "$\\rightarrow$").to_string()
+    let arrows = Regex::new(r"=>|&rarr;").unwrap();
+    let dollar_signs = Regex::new(r"\$(\d+)").unwrap();
+    let ampersands = Regex::new(r"[^\\]&").unwrap();
+    *line = dollar_signs.replace_all(line, |caps: &Captures| format!("\\${}", &caps[1])).to_string();
+    *line = ampersands.replace_all(line, r" \&").to_string();
+    arrows.replace_all(line, "$\\rightarrow$").to_string()
 }
 
 /// uses the "ulem" package
