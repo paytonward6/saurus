@@ -1,21 +1,22 @@
-use std::collections::VecDeque;
-use std::fmt;
 use std::fs;
 use std::io::{Error, Write};
 use std::path::PathBuf;
 
-pub mod latexer;
 pub mod code_blocks;
+pub mod generator;
+pub mod lexer;
+pub mod parser;
 pub mod re;
 
-type Languages = code_blocks::Languages;
+pub fn run(file_str: &str, path: &PathBuf) {
+    let mut lex = lexer::Lexer::new();
+    lex.tokenize(file_str);
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum TokenKind {
-    FileStart,
-    FileEnd,
-    Heading(usize),
+    let mut parse = parser::Parser::from(lex);
+    parse.run();
+    println!("{:#?}", parse);
 
+<<<<<<< HEAD
     BeginUnorderedList(usize),
     UnorderedListItem(char, usize),
     EndUnorderedList(usize),
@@ -341,4 +342,25 @@ impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.contents.as_ref().unwrap())
     }
+=======
+    write(path, parse).unwrap_or_else(|error| {
+        println!("{}", error);
+    });
+}
+
+fn write(path: &PathBuf, parser: parser::Parser) -> Result<(), Error> {
+    let mut file = fs::File::create(path)?;
+    writeln!(file, "{}", generator::documentclass())?;
+    writeln!(
+        file,
+        "{}",
+        generator::packages(parser.lexer.contains_code_block)
+    )?;
+    for line in parser.results.into_iter() {
+        if let Some(line) = generator::generate_line(line) {
+            writeln!(file, "{}", line)?;
+        }
+    }
+    Ok(())
+>>>>>>> main
 }

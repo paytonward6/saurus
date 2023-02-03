@@ -1,6 +1,6 @@
 [package]
 name = "saurus"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 license = "MIT"
 description = "Markdown to LaTeX Transpiler"
@@ -11,5 +11,4 @@ repository = "https://github.com/paytonward6/saurus"
 [dependencies]
 clap = { version = "4.1.1", features = ["cargo"] }
 regex = "1.7.1"
-strum_macros = "0.24.3"
-strum = "0.24.1"
+itertools = "0.10.5"

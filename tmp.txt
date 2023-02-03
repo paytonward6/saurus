@@ -1,0 +1,41 @@
+
+        if let Token::CodeBlock = token {
+            if let Some(language) = re::replace_code_block(string) {
+                let mut language = language;
+                if code_blocks::LISTINGS_LANGUAGES
+                    .iter()
+                    .filter(|listings_languages| language == **listings_languages)
+                    .count()
+                    == 0
+                {
+                    eprintln!(
+                        "Language \"{}\" not found. Using default of \"python\".",
+                        language
+                    );
+                    language = "python".to_string();
+                };
+                let contents = Contents::new(language, token, Chronology::Start, indent_level);
+                return Some((Previous::from(&contents), contents));
+            } else {
+                let contents = Contents::new(string.to_string(), token, Chronology::End, indent_level);
+                return Some((Previous::from(&contents), contents));
+            }
+        } else if token_discrim != prev_discrim && token_discrim != next_discrim {
+            let contents = Contents::new(string.to_string(), token, Chronology::None, indent_level);
+            return Some((Previous::from(&contents), contents));
+        } else if token_discrim != next_discrim || indent_level > next_indent_level {
+            let contents = Contents::new(string.to_string(), token, Chronology::End, indent_level);
+            return Some((Previous::from(&contents), contents));
+        } else if token_discrim != prev_discrim
+            || (token_discrim == prev_discrim && previous.chron == Chronology::End)
+            || (indent_level > previous.indent_level)
+        {
+            let contents = Contents::new(string.to_string(), token, Chronology::Start, indent_level);
+            return Some((Previous::from(&contents), contents));
+        } else if token_discrim == prev_discrim && token_discrim == next_discrim && indent_level == previous.indent_level {
+            let contents = Contents::new(string.to_string(), token, Chronology::Middle, indent_level);
+            return Some((Previous::from(&contents), contents));
+        }
+        None
+    }
+}

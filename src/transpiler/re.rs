@@ -1,7 +1,5 @@
-use regex::Regex;
 use regex::Captures;
-
-use crate::transpiler::code_blocks::Languages;
+use regex::Regex;
 
 /// ```
 /// use saurus::transpiler::re;
@@ -112,19 +110,14 @@ pub fn is_code_block(line: &str) -> bool {
 
 ///```
 /// use saurus::transpiler::re;
-/// use saurus::transpiler::code_blocks::Languages;
-/// assert_eq!(re::replace_code_block(&"```python".to_string()).unwrap(), Languages::Python);
+/// assert_eq!(re::replace_code_block(&"```python".to_string()).unwrap(), "python".to_string());
 ///```
-pub fn replace_code_block(line: &str) -> Option<Languages> {
+pub fn replace_code_block(line: &str) -> Option<String> {
     let re = Regex::new(r"\s*```(.+)").unwrap();
     let cap = re.captures(line);
     if let Some(cap) = cap {
         let contents: &str = cap.get(1).unwrap().as_str();
-        let result: Languages = contents.parse().unwrap_or_else(|_| {
-            println!("Code block: Language \"{}\" not found. Using default of \"Language::C\"", contents);
-            Languages::C
-        });
-        return Some(result)
+        return Some(contents.to_owned());
     }
     None
 }
@@ -155,65 +148,80 @@ pub fn replace_block_quote(line: &str) -> String {
 /// use saurus::transpiler::re;
 /// assert_eq!(re::bold(&mut "**bold me**".to_string()), r"\textbf{bold me}".to_string());
 ///```
-pub fn bold(line: &mut String) -> String {//Option<String> 
+pub fn bold(line: &mut str) -> String {
+    //Option<String>
     let re = Regex::new(r"\*\*([^\*]*)\*\*").unwrap();
-    re.replace_all(line, |caps: &Captures| {
-        format!("\\textbf{{{}}}", &caps[1])
-    }).to_string()
+    re.replace_all(line, |caps: &Captures| format!("\\textbf{{{}}}", &caps[1]))
+        .to_string()
 }
 
 ///```
 /// use saurus::transpiler::re;
 /// assert_eq!(re::italicize(&mut "*italicize me*".to_string()), r"\textit{italicize me}".to_string());
 ///```
-pub fn italicize(line: &mut String) -> String {//Option<String> 
+pub fn italicize(line: &mut str) -> String {
+    //Option<String>
     let re = Regex::new(r"\*([^\*]*)\*").unwrap();
-    re.replace_all(line, |caps: &Captures| {
-        format!("\\textit{{{}}}", &caps[1])
-    }).to_string()
+    re.replace_all(line, |caps: &Captures| format!("\\textit{{{}}}", &caps[1]))
+        .to_string()
 }
 
 ///```
 /// use saurus::transpiler::re;
 /// assert_eq!(re::bold_italicize(&mut "***italicize me***".to_string()), r"\textbf{\textit{italicize me}}".to_string());
 ///```
-pub fn bold_italicize(line: &mut String) -> String {//Option<String> 
+pub fn bold_italicize(line: &mut str) -> String {
+    //Option<String>
     let re = Regex::new(r"\*\*\*([^\*]*)\*\*\*").unwrap();
     re.replace_all(line, |caps: &Captures| {
         format!("\\textbf{{\\textit{{{}}}}}", &caps[1])
-    }).to_string()
+    })
+    .to_string()
 }
 
 ///```
 /// use saurus::transpiler::re;
 /// assert_eq!(re::links(&mut "[saurus](https://github.com/paytonward6/saurus)".to_string()), r"\href{https://github.com/paytonward6/saurus}{saurus}".to_string());
+/// assert_eq!(re::links(&mut "[indentfirst](https://ctan.org/pkg/indentfirst) text afterwards".to_string()), r"\href{https://ctan.org/pkg/indentfirst}{indentfirst} text afterwards".to_string());
 ///```
-pub fn links(line: &mut String) -> String {
-    let re = Regex::new(r"\[([a-zA-Z:]*)\]\((https://.*)\)").unwrap();
+pub fn links(line: &mut str) -> String {
+    // \[.*\]([^\)]*) potentially fixes
+    let re = Regex::new(r"\[([a-zA-Z:][^\]]*)\]\((https://[^\)\(]*)\)").unwrap();
     re.replace_all(line, |caps: &Captures| {
         format!("\\href{{{}}}{{{}}}", &caps[2], &caps[1])
-    }).to_string()
+    })
+    .to_string()
 }
 
 ///```
 /// use saurus::transpiler::re;
 /// assert_eq!(re::inline_code(&mut "`let x = 2;`".to_string()), r"\verb|let x = 2;|".to_string());
 ///```
-pub fn inline_code(line: &mut String) -> String {//Option<String> 
+pub fn inline_code(line: &mut str) -> String {
+    //Option<String>
     //let re = Regex::new(r"`([^`]*)`").unwrap();
     let re = Regex::new(r"`([^`]+)`").unwrap();
-    re.replace_all(line, |caps: &Captures| {
-        format!("\\verb|{}|", &caps[1])
-    }).to_string()
+    re.replace_all(line, |caps: &Captures| format!("\\verb|{}|", &caps[1]))
+        .to_string()
 }
 
 ///```
 /// use saurus::transpiler::re;
 /// assert_eq!(re::symbols(&mut "=>".to_string()), r"$\rightarrow$".to_string());
+/// assert_eq!(re::symbols(&mut "&rarr;".to_string()), r"$\rightarrow$".to_string());
+/// assert_eq!(re::symbols(&mut "$123".to_string()), r"\$123".to_string());
+/// assert_eq!(re::symbols(&mut r"$\frac{1}{2}$".to_string()), r"$\frac{1}{2}$".to_string());
+/// assert_eq!(re::symbols(&mut r"You & Me".to_string()), r"You \& Me".to_string());
+/// assert_eq!(re::symbols(&mut r"$Me \& You$".to_string()), r"$Me \& You$".to_string());
 ///```
-pub fn symbols(line: &mut String) -> String {//Option<String> 
-    let re = Regex::new(r"=>").unwrap();
-    re.replace_all(line, "$\\rightarrow$").to_string()
+pub fn symbols(line: &mut String) -> String {
+    //Option<String>
+    let arrows = Regex::new(r"=>|&rarr;").unwrap();
+    let dollar_signs = Regex::new(r"\$(\d+)").unwrap();
+    let ampersands = Regex::new(r"[^\\]&").unwrap();
+    *line = dollar_signs.replace_all(line, |caps: &Captures| format!("\\${}", &caps[1])).to_string();
+    *line = ampersands.replace_all(line, r" \&").to_string();
+    arrows.replace_all(line, "$\\rightarrow$").to_string()
 }
 
 /// uses the "ulem" package
@@ -221,9 +229,28 @@ pub fn symbols(line: &mut String) -> String {//Option<String>
 /// use saurus::transpiler::re;
 /// assert_eq!(re::strike_out(&mut "~~strike this out~~".to_string()), r"\sout{strike this out}".to_string());
 /// ```
-pub fn strike_out(line: &mut String) -> String {//Option<String> 
+pub fn strike_out(line: &mut str) -> String {
+    //Option<String>
     let re = Regex::new(r"\~\~([^\~]*)\~\~").unwrap();
-    re.replace_all(line, |caps: &Captures| {
-        format!("\\sout{{{}}}", &caps[1])
-    }).to_string()
+    re.replace_all(line, |caps: &Captures| format!("\\sout{{{}}}", &caps[1]))
+        .to_string()
+}
+
+/// uses the "ulem" package
+/// ```
+/// use saurus::transpiler::re;
+/// assert_eq!(re::indent_level(&"- item"), 0);
+/// assert_eq!(re::indent_level(&"    - item"), 1);
+/// assert_eq!(re::indent_level(&"        - item"), 2);
+/// ```
+pub fn indent_level(line: &str) -> usize {
+    if line.is_empty() {
+        0
+    } else {
+        // Only works for 4 space indent
+        let re = Regex::new(r"(\s*)\S").unwrap();
+        let cap = re.captures(line).unwrap();
+        let res = cap.get(1).map_or("", |m| m.as_str());
+        res.len() / 4
+    }
 }
