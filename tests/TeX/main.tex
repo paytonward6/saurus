@@ -31,43 +31,70 @@
  
 \setcounter{secnumdepth}{0}
 
-\subsection{Heading 1}
+\begin{quote}
+    My\\
+    Block\\
+    Quote\\
+    Two
+\end{quote}
+
+links not working with: (\href{https://ctan.org/pkg/required}{required package} in all LaTeX distributions))
+\section{Heading 1}
 
 \begin{itemize}
-    \item - item 1
-    \item - item 2
-    \item - item 3
+    \item - baz
+    \item - qux
 \end{itemize}
 
-\begin{enumerate}
-    \setcounter{enumi}{0}
-    \item item 1
-\end{enumerate}
-
-\begin{enumerate}
-    \setcounter{enumi}{2}
-    \item item 2
-    \item item 3
-\end{enumerate}
-
 \begin{lstlisting}[language=python, style=myStyle]
-for i in range(10):
-    print(i)
+int main() {
+    printf("%d", i);
+}
 \end{lstlisting}
 
-\begin{enumerate}
-    \setcounter{enumi}{2}
-    \item item 2
-    \item item 3
-\end{enumerate}
+this is a normal line
+\begin{lstlisting}[language=python, style=myStyle]
+% derived parameters
+k = 1/SR;                    % time step
+coef = 2-k^2\textit{(2}pi*f0)^2;    % scheme update coefficient
+NF = floor(TF*SR);           % duration of simulation (samples)
+\end{lstlisting}
 
-\textbf{blah}
 \begin{quote}
-    this
+    My\\
+    Block\\
+    Quote\\
+    One
 \end{quote}
 
 \subsection{Heading 2}
 
-$Me \& You$
-You \& Me
+\begin{enumerate}
+    \setcounter{enumi}{0}
+    \item foo
+    \item bar
+    \item baz
+\end{enumerate}
+
+\begin{enumerate}
+    \setcounter{enumi}{19}
+    \item this
+    \item is. \verb|x = 2|
+    \item \textbf{blah} \textit{hi}
+    \item \sout{strike}
+\end{enumerate}
+
+\subsubsection{This is my new heading}
+
+\subsubsection{Another heading}
+
+test 
+\begin{enumerate}
+    \setcounter{enumi}{19}
+    \item this
+    \item is. \verb|x = 2|
+    \item \textbf{blah} \textit{hi}
+    \item \sout{strike}
+\end{enumerate}
+
 \end{document}

@@ -3,7 +3,7 @@
 > Quote
 > Two
 
-links not working with: ()
+links not working with: ([required package](https://ctan.org/pkg/required) in all LaTeX distributions))
 
 # Heading 1
 - baz
