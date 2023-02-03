@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-use std::fmt;
 use std::fs;
 use std::io::{Error, Write};
 use std::path::PathBuf;
