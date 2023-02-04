@@ -230,3 +230,22 @@ pub fn strike_out(line: &mut String) -> String {
     re.replace_all(line, |caps: &Captures| format!("\\sout{{{}}}", &caps[1]))
         .to_string()
 }
+
+/// uses the "ulem" package
+/// ```
+/// use saurus::transpiler::re;
+/// assert_eq!(re::indent_level(&"- item"), 0);
+/// assert_eq!(re::indent_level(&"    - item"), 1);
+/// assert_eq!(re::indent_level(&"        - item"), 2);
+/// ```
+pub fn indent_level(line: &str) -> usize {
+    if line.is_empty() {
+        0
+    } else {
+        // Only works for 4 space indent
+        let re = Regex::new(r"(\s*)\S").unwrap();
+        let cap = re.captures(line).unwrap();
+        let res = cap.get(1).map_or("", |m| m.as_str());
+        res.len() / 4
+    }
+}
