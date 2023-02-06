@@ -25,7 +25,7 @@ pub struct Lexer {
     pub contains_code_block: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Info {
     pub token: Token,
     pub line: Option<String>,

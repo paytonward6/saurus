@@ -12,8 +12,8 @@ pub fn run(file_str: &str, path: &PathBuf) {
     let mut lex = lexer::Lexer::new();
     lex.tokenize(&file_str);
 
-    let mut parse = parser::Parser::from(lex);
-    parse.run();
+    let mut parse = parser::Parser::new();
+    parse.run(lex);
 
     write(path, parse).unwrap_or_else(|error| {
         println!("{}", error);
@@ -26,7 +26,7 @@ fn write(path: &PathBuf, parser: parser::Parser) -> Result<(), Error> {
     write!(
         file,
         "{}\n",
-        generator::packages(parser.lexer.contains_code_block)
+        generator::packages(parser.contains_code_block)
     )?;
     for line in parser.results.into_iter() {
         if let Some(line) = generator::generate_line(line) {

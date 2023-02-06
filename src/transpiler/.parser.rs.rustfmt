@@ -9,10 +9,10 @@ use crate::transpiler::re;
 
 #[derive(Debug)]
 pub struct Parser {
+    pub lexer: lexer::Lexer,
     pub stack: Vec<lexer::Token>,
     pub results: Vec<Contents>,
     pub previous: Previous,
-    pub contains_code_block: bool,
 }
 
 #[derive(Debug)]
@@ -36,22 +36,22 @@ pub enum Chronology {
     None,
 }
 
-//impl From<lexer::Lexer> for Parser {
-//    fn from(lexer: lexer::Lexer) -> Self {
-//        let stack: Vec<lexer::Token> = Vec::new();
-//        let previous = Previous {
-//            kind: Token::FileStart,
-//            chron: Chronology::None,
-//        };
-//        let results: Vec<Contents> = Vec::new();
-//        Parser {
-//            lexer,
-//            stack,
-//            results,
-//            previous,
-//        }
-//    }
-//}
+impl From<lexer::Lexer> for Parser {
+    fn from(lexer: lexer::Lexer) -> Self {
+        let stack: Vec<lexer::Token> = Vec::new();
+        let previous = Previous {
+            kind: Token::FileStart,
+            chron: Chronology::None,
+        };
+        let results: Vec<Contents> = Vec::new();
+        Parser {
+            lexer,
+            stack,
+            results,
+            previous,
+        }
+    }
+}
 
 impl From<&Contents> for Previous {
     fn from(contents: &Contents) -> Self {
@@ -68,38 +68,18 @@ impl Contents {
 }
 
 impl Parser {
-    pub fn new() -> Self {
-        let stack: Vec<lexer::Token> = Vec::new();
-        let previous = Previous {
-            kind: Token::FileStart,
-            chron: Chronology::None,
-        };
-        let results: Vec<Contents> = Vec::new();
-        let contains_code_block = false;
-        Parser {
-            stack,
-            results,
-            previous,
-            contains_code_block,
-        }
-    }
-
-    pub fn run(&mut self, lexer: lexer::Lexer) {
-        let mut iter = lexer.tokens.into_iter().peekable();
+    pub fn run(&mut self) {
+        let mut iter = multipeek(self.lexer.tokens.iter().enumerate());
         while let Some(item) = iter.next() {
-            let current = item;
-            if let Token::CodeBlock = current.token {
-                self.contains_code_block = true;
-            }
-            //let (_num, (token, string)) = item;
+            let (_num, (token, string)) = item;
             //println!("{:?}, ({:?}, {:?})", num, token, string);
             if let Some(next) = iter.peek() {
-                if lexer::Lexer::is_group(&current.token) {
+                if lexer::Lexer::is_group(&token) {
+                    let next_token = next.1 .0;
                     if let Some((previous, contents)) = self.group_to_contents(
-                        current,
-                        //&current.line.unwrap_or("".to_string()),
-                        //current.token,
-                        next.token,
+                        &string.as_ref().unwrap_or(&"".to_owned()),
+                        *token,
+                        next_token,
                         &self.previous,
                     ) {
                         self.previous = previous;
@@ -107,40 +87,36 @@ impl Parser {
                     }
                 } else {
                     self.results.push(Contents::new(
-                        current.line.unwrap_or("".to_string()),
-                        current.token,
+                        string.as_ref().unwrap_or(&"".to_owned()).to_string(),
+                        *token,
                         Chronology::None,
                     ));
                     self.previous = Previous {
-                        kind: current.token,
+                        kind: *token,
                         chron: Chronology::None,
                     };
                 }
                 //}
             } else {
                 self.results
-                    .push(Contents::new("".to_string(), current.token, Chronology::None));
+                    .push(Contents::new("".to_string(), *token, Chronology::None));
             }
         }
     }
 
     fn group_to_contents(
         &self,
-        info: lexer::Info,
-        //string: &str,
-        //token: Token,
+        string: &str,
+        token: Token,
         next: Token,
         previous: &Previous,
     ) -> Option<(Previous, Contents)> {
-
-        let string = info.line.unwrap_or("".to_owned());
-        let token: Token = info.token;
         let token_discrim = mem::discriminant(&token);
         let next_discrim = mem::discriminant(&next);
         let prev_discrim = mem::discriminant(&previous.kind);
 
         if let Token::CodeBlock = token {
-            if let Some(language) = re::replace_code_block(&string) {
+            if let Some(language) = re::replace_code_block(string) {
                 let mut language = language;
                 if code_blocks::LISTINGS_LANGUAGES
                     .iter()
