@@ -214,7 +214,9 @@ pub fn symbols(line: &mut String) -> String {
     let arrows = Regex::new(r"=>|&rarr;").unwrap();
     let dollar_signs = Regex::new(r"\$(\d+)").unwrap();
     let ampersands = Regex::new(r"[^\\]&").unwrap();
-    *line = dollar_signs.replace_all(line, |caps: &Captures| format!("\\${}", &caps[1])).to_string();
+    *line = dollar_signs
+        .replace_all(line, |caps: &Captures| format!("\\${}", &caps[1]))
+        .to_string();
     *line = ampersands.replace_all(line, r" \&").to_string();
     arrows.replace_all(line, "$\\rightarrow$").to_string()
 }

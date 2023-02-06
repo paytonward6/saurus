@@ -1,7 +1,5 @@
 use std::mem;
 
-use itertools::multipeek;
-
 use crate::transpiler::code_blocks;
 use crate::transpiler::lexer;
 use crate::transpiler::lexer::Token;
@@ -36,23 +34,6 @@ pub enum Chronology {
     None,
 }
 
-//impl From<lexer::Lexer> for Parser {
-//    fn from(lexer: lexer::Lexer) -> Self {
-//        let stack: Vec<lexer::Token> = Vec::new();
-//        let previous = Previous {
-//            kind: Token::FileStart,
-//            chron: Chronology::None,
-//        };
-//        let results: Vec<Contents> = Vec::new();
-//        Parser {
-//            lexer,
-//            stack,
-//            results,
-//            previous,
-//        }
-//    }
-//}
-
 impl From<&Contents> for Previous {
     fn from(contents: &Contents) -> Self {
         Previous {
@@ -61,6 +42,7 @@ impl From<&Contents> for Previous {
         }
     }
 }
+
 impl Contents {
     fn new(line: String, kind: lexer::Token, chron: Chronology) -> Self {
         Contents { line, kind, chron }
@@ -68,7 +50,7 @@ impl Contents {
 }
 
 impl Parser {
-    pub fn new() -> Self {
+    pub fn new() -> Parser {
         let stack: Vec<lexer::Token> = Vec::new();
         let previous = Previous {
             kind: Token::FileStart,
@@ -91,62 +73,42 @@ impl Parser {
             if let Token::CodeBlock = current.token {
                 self.contains_code_block = true;
             }
-            //let (_num, (token, string)) = item;
-            //println!("{:?}, ({:?}, {:?})", num, token, string);
             if let Some(next) = iter.peek() {
                 if lexer::Lexer::is_group(&current.token) {
-                    if let Some((previous, contents)) = self.group_to_contents(
-                        current,
-                        //&current.line.unwrap_or("".to_string()),
-                        //current.token,
-                        next.token,
-                        &self.previous,
-                    ) {
-                        self.previous = previous;
+                    if let Some(contents) = self.group_to_contents(current, next) {
+                        self.previous = Previous::from(&contents);
                         self.results.push(contents);
                     }
                 } else {
-                    self.results.push(Contents::new(
+                    let contents = Contents::new(
                         current.line.unwrap_or("".to_string()),
                         current.token,
                         Chronology::None,
-                    ));
-                    self.previous = Previous {
-                        kind: current.token,
-                        chron: Chronology::None,
-                    };
+                    );
+                    self.previous = Previous::from(&contents);
+                    self.results.push(contents);
                 }
-                //}
             } else {
-                self.results
-                    .push(Contents::new("".to_string(), current.token, Chronology::None));
+                self.results.push(Contents::new(
+                    "".to_string(),
+                    current.token,
+                    Chronology::None,
+                ));
             }
         }
     }
 
-    fn group_to_contents(
-        &self,
-        info: lexer::Info,
-        //string: &str,
-        //token: Token,
-        next: Token,
-        previous: &Previous,
-    ) -> Option<(Previous, Contents)> {
+    fn group_to_contents(&self, current: lexer::Info, next: &lexer::Info) -> Option<Contents> {
+        let string: String = current.line.unwrap_or("".to_owned());
 
-        let string = info.line.unwrap_or("".to_owned());
-        let token: Token = info.token;
-        let token_discrim = mem::discriminant(&token);
-        let next_discrim = mem::discriminant(&next);
-        let prev_discrim = mem::discriminant(&previous.kind);
+        let token_discrim = mem::discriminant(&current.token);
+        let next_discrim = mem::discriminant(&next.token);
+        let prev_discrim = mem::discriminant(&self.previous.kind);
 
-        if let Token::CodeBlock = token {
+        if let Token::CodeBlock = current.token {
             if let Some(language) = re::replace_code_block(&string) {
                 let mut language = language;
-                if code_blocks::LISTINGS_LANGUAGES
-                    .iter()
-                    .filter(|listings_languages| language == **listings_languages)
-                    .count()
-                    == 0
+                if code_blocks::is_invalid_language(&language)
                 {
                     eprintln!(
                         "Language \"{}\" not found. Using default of \"python\".",
@@ -154,26 +116,20 @@ impl Parser {
                     );
                     language = "python".to_string();
                 };
-                let contents = Contents::new(language, token, Chronology::Start);
-                return Some((Previous::from(&contents), contents));
+                return Some(Contents::new(language, current.token, Chronology::Start))
             } else {
-                let contents = Contents::new(string.to_string(), token, Chronology::End);
-                return Some((Previous::from(&contents), contents));
+                return Some(Contents::new(string, current.token, Chronology::End))
             }
         } else if token_discrim != prev_discrim && token_discrim != next_discrim {
-            let contents = Contents::new(string.to_string(), token, Chronology::None);
-            return Some((Previous::from(&contents), contents));
+            return Some(Contents::new(string, current.token, Chronology::None));
         } else if token_discrim != next_discrim {
-            let contents = Contents::new(string.to_string(), token, Chronology::End);
-            return Some((Previous::from(&contents), contents));
+            return Some(Contents::new(string, current.token, Chronology::End));
         } else if token_discrim != prev_discrim
-            || (token_discrim == prev_discrim && previous.chron == Chronology::End)
+            || (token_discrim == prev_discrim && self.previous.chron == Chronology::End)
         {
-            let contents = Contents::new(string.to_string(), token, Chronology::Start);
-            return Some((Previous::from(&contents), contents));
+            return Some(Contents::new(string, current.token, Chronology::Start));
         } else if token_discrim == prev_discrim && token_discrim == next_discrim {
-            let contents = Contents::new(string.to_string(), token, Chronology::Middle);
-            return Some((Previous::from(&contents), contents));
+            return Some(Contents::new(string, current.token, Chronology::Middle));
         }
         None
     }
