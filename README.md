@@ -2,6 +2,26 @@
 
 Markdown &rarr; LaTeX transpiler
 
+## Usage
+```sh
+$ saurus -i input.md -o out.tex
+```
+
+### Currently supports
+- Headings
+- Ordered Lists (with respect for numbers)
+- Unordered Lists
+- Bold
+- Italics
+- Bold & Italics
+- Source Code Blocks
+- Inline Code
+- Block Quotes
+
+### Pending Support
+- Nested Lists
+- Continuation of Lists when interrupted by blocks
+
 ## LaTeX packages required
 - [geometry](https://ctan.org/pkg/geometry): margins
 - [ulem](https://ctan.org/pkg/ulem): ~~strikeout~~ functionality
