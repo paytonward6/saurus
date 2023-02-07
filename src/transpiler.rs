@@ -22,15 +22,15 @@ pub fn run(file_str: &str, path: &PathBuf) {
 
 fn write(path: &PathBuf, parser: parser::Parser) -> Result<(), Error> {
     let mut file = fs::File::create(path)?;
-    write!(file, "{}\n", generator::documentclass())?;
-    write!(
+    writeln!(file, "{}", generator::documentclass())?;
+    writeln!(
         file,
-        "{}\n",
+        "{}",
         generator::packages(parser.contains_code_block)
     )?;
     for line in parser.results.into_iter() {
         if let Some(line) = generator::generate_line(line) {
-            write!(file, "{}\n", line)?;
+            writeln!(file, "{}", line)?;
         }
     }
     Ok(())

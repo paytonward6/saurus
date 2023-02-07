@@ -55,7 +55,7 @@ pub fn parse_heading(line: &str) -> (usize, String) {
 /// assert!(re::is_unordered_list(r"+ Contents here!"));
 ///```
 pub fn is_unordered_list(line: &str) -> bool {
-    let re: Regex = Regex::new(r"^\s*[\-\+]\s*").unwrap();
+    let re: Regex = Regex::new(r"^\s*[\-\+\*]\s*").unwrap();
     re.is_match(line)
 }
 
@@ -66,7 +66,7 @@ pub fn is_unordered_list(line: &str) -> bool {
 /// assert_eq!(re::replace_unordered_list(&mut "+ Contents here!"), contents);
 ///```
 pub fn replace_unordered_list(line: &str) -> String {
-    let re: Regex = Regex::new(r"^\s*[\-\+]\s*").unwrap();
+    let re: Regex = Regex::new(r"^\s*[\-\+\*]\s*").unwrap();
     re.replace(line, "").to_string()
 }
 
@@ -75,7 +75,7 @@ pub fn replace_unordered_list(line: &str) -> String {
 /// assert!(re::is_ordered_list("7. Contents here!"));
 ///```
 pub fn is_ordered_list(line: &str) -> bool {
-    let re: Regex = Regex::new(r"^\s*\d*\.").unwrap();
+    let re: Regex = Regex::new(r"^\s*\d*[\.\)]").unwrap();
     re.is_match(line)
 }
 
