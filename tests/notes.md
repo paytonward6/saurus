@@ -6,7 +6,7 @@
 links not working with: ([required package](https://ctan.org/pkg/required) in all LaTeX distributions))
 
 # Heading 1
-- baz
+- *baz*
 - qux
 
 ```c

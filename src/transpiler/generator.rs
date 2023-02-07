@@ -93,12 +93,11 @@ fn listify(contents: parser::Contents) -> String {
 
 fn code_block(content: parser::Contents) -> String {
     type Chronology = parser::Chronology;
-    let language = "python";
     match content.chron {
         Chronology::Start => {
             format!(
                 "\\begin{{lstlisting}}[language={}, style=myStyle]",
-                language
+                content.line.unwrap()
             )
         }
         Chronology::End => "\\end{lstlisting}\n".to_owned(),
