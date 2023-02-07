@@ -1,6 +1,7 @@
 /target
-main.aux
-main.log
-main.pdf
-main.out
+*.aux
+*.log
+*.pdf
+*.out
 notes.txt
+.DS_Store
