@@ -105,14 +105,16 @@ pub fn is_code_block(line: &str) -> bool {
 
 ///```
 /// use saurus::transpiler::re;
-/// assert_eq!(re::replace_code_block(&"```python".to_string()).unwrap(), "python".to_string());
+/// assert_eq!(re::replace_code_block(Some("```python")).unwrap(), "python".to_string());
 ///```
-pub fn replace_code_block(line: &str) -> Option<String> {
+pub fn replace_code_block(line: Option<&str>) -> Option<String> {
     let re = Regex::new(r"\s*```(.+)").unwrap();
-    let cap = re.captures(line);
-    if let Some(cap) = cap {
-        let contents: &str = cap.get(1).unwrap().as_str();
-        return Some(contents.to_owned());
+    if let Some(line) = line {
+        let cap = re.captures(&line);
+        if let Some(cap) = cap {
+            let contents: &str = cap.get(1).unwrap().as_str();
+            return Some(contents.to_owned());
+        }
     }
     None
 }
@@ -214,7 +216,9 @@ pub fn symbols(line: &mut String) -> String {
     let arrows = Regex::new(r"=>|&rarr;").unwrap();
     let dollar_signs = Regex::new(r"\$(\d+)").unwrap();
     let ampersands = Regex::new(r"[^\\]&").unwrap();
-    *line = dollar_signs.replace_all(line, |caps: &Captures| format!("\\${}", &caps[1])).to_string();
+    *line = dollar_signs
+        .replace_all(line, |caps: &Captures| format!("\\${}", &caps[1]))
+        .to_string();
     *line = ampersands.replace_all(line, r" \&").to_string();
     arrows.replace_all(line, "$\\rightarrow$").to_string()
 }
@@ -229,4 +233,23 @@ pub fn strike_out(line: &mut String) -> String {
     let re = Regex::new(r"\~\~([^\~]*)\~\~").unwrap();
     re.replace_all(line, |caps: &Captures| format!("\\sout{{{}}}", &caps[1]))
         .to_string()
+}
+
+/// uses the "ulem" package
+/// ```
+/// use saurus::transpiler::re;
+/// assert_eq!(re::indent_level(&"- item"), 0);
+/// assert_eq!(re::indent_level(&"    - item"), 1);
+/// assert_eq!(re::indent_level(&"        - item"), 2);
+/// ```
+pub fn indent_level(line: &str) -> usize {
+    if line.is_empty() {
+        0
+    } else {
+        // Only works for 4 space indent
+        let re = Regex::new(r"(\s*)\S").unwrap();
+        let cap = re.captures(line).unwrap();
+        let res = cap.get(1).map_or("", |m| m.as_str());
+        res.len() / 4
+    }
 }

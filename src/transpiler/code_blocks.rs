@@ -1,4 +1,12 @@
 // List of all languages can also be found at [TeXDoc](https://texdoc.org/serve/listings.pdf/0) on page 13
+pub fn is_invalid_language(language: &str) -> bool {
+    LISTINGS_LANGUAGES
+        .iter()
+        .filter(|listings_languages| language == **listings_languages)
+        .count()
+        == 0
+}
+
 pub const LISTINGS_LANGUAGES: [&'static str; 94] = [
     "python",
     "c",
