@@ -105,14 +105,16 @@ pub fn is_code_block(line: &str) -> bool {
 
 ///```
 /// use saurus::transpiler::re;
-/// assert_eq!(re::replace_code_block(&"```python".to_string()).unwrap(), "python".to_string());
+/// assert_eq!(re::replace_code_block(Some("```python")).unwrap(), "python".to_string());
 ///```
-pub fn replace_code_block(line: &str) -> Option<String> {
+pub fn replace_code_block(line: Option<&str>) -> Option<String> {
     let re = Regex::new(r"\s*```(.+)").unwrap();
-    let cap = re.captures(line);
-    if let Some(cap) = cap {
-        let contents: &str = cap.get(1).unwrap().as_str();
-        return Some(contents.to_owned());
+    if let Some(line) = line {
+        let cap = re.captures(&line);
+        if let Some(cap) = cap {
+            let contents: &str = cap.get(1).unwrap().as_str();
+            return Some(contents.to_owned());
+        }
     }
     None
 }

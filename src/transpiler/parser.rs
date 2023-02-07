@@ -15,7 +15,7 @@ pub struct Parser {
 
 #[derive(Debug)]
 pub struct Contents {
-    pub line: String,
+    pub line: Option<String>,
     pub kind: lexer::Token,
     pub chron: Chronology,
 }
@@ -44,7 +44,7 @@ impl From<&Contents> for Previous {
 }
 
 impl Contents {
-    fn new(line: String, kind: lexer::Token, chron: Chronology) -> Self {
+    fn new(line: Option<String>, kind: lexer::Token, chron: Chronology) -> Self {
         Contents { line, kind, chron }
     }
 }
@@ -67,12 +67,13 @@ impl Parser {
     }
 
     pub fn run(&mut self, lexer: lexer::Lexer) {
-        let mut iter = lexer.tokens.into_iter().peekable();
+        if lexer.results.iter().any(|item| item.token == Token::CodeBlock) {
+            self.contains_code_block = true;
+        }
+
+        let mut iter = lexer.results.into_iter().peekable();
         while let Some(item) = iter.next() {
             let current = item;
-            if let Token::CodeBlock = current.token {
-                self.contains_code_block = true;
-            }
             if let Some(next) = iter.peek() {
                 if lexer::Lexer::is_group(&current.token) {
                     if let Some(contents) = self.group_to_contents(current, next) {
@@ -81,7 +82,7 @@ impl Parser {
                     }
                 } else {
                     let contents = Contents::new(
-                        current.line.unwrap_or("".to_string()),
+                        current.line,
                         current.token,
                         Chronology::None,
                     );
@@ -90,7 +91,7 @@ impl Parser {
                 }
             } else {
                 self.results.push(Contents::new(
-                    "".to_string(),
+                    None,
                     current.token,
                     Chronology::None,
                 ));
@@ -99,14 +100,12 @@ impl Parser {
     }
 
     fn group_to_contents(&self, current: lexer::Info, next: &lexer::Info) -> Option<Contents> {
-        let string: String = current.line.unwrap_or("".to_owned());
-
         let token_discrim = mem::discriminant(&current.token);
         let next_discrim = mem::discriminant(&next.token);
         let prev_discrim = mem::discriminant(&self.previous.kind);
 
         if let Token::CodeBlock = current.token {
-            if let Some(language) = re::replace_code_block(&string) {
+            if let Some(language) = re::replace_code_block(current.line.as_ref().map(|x| &**x)) {
                 let mut language = language;
                 if code_blocks::is_invalid_language(&language)
                 {
@@ -116,20 +115,20 @@ impl Parser {
                     );
                     language = "python".to_string();
                 };
-                return Some(Contents::new(language, current.token, Chronology::Start))
+                return Some(Contents::new(Some(language), current.token, Chronology::Start))
             } else {
-                return Some(Contents::new(string, current.token, Chronology::End))
+                return Some(Contents::new(current.line, current.token, Chronology::End))
             }
         } else if token_discrim != prev_discrim && token_discrim != next_discrim {
-            return Some(Contents::new(string, current.token, Chronology::None));
+            return Some(Contents::new(current.line, current.token, Chronology::None));
         } else if token_discrim != next_discrim {
-            return Some(Contents::new(string, current.token, Chronology::End));
+            return Some(Contents::new(current.line, current.token, Chronology::End));
         } else if token_discrim != prev_discrim
             || (token_discrim == prev_discrim && self.previous.chron == Chronology::End)
         {
-            return Some(Contents::new(string, current.token, Chronology::Start));
+            return Some(Contents::new(current.line, current.token, Chronology::Start));
         } else if token_discrim == prev_discrim && token_discrim == next_discrim {
-            return Some(Contents::new(string, current.token, Chronology::Middle));
+            return Some(Contents::new(current.line, current.token, Chronology::Middle));
         }
         None
     }

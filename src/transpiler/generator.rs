@@ -2,60 +2,76 @@ use crate::transpiler::{lexer, parser, re};
 
 pub fn generate_line(mut contents: parser::Contents) -> Option<String> {
     type Token = lexer::Token;
-    contents.line = transpile_line(&mut contents.line);
     match contents.kind {
         Token::FileStart => Some(format!("\\begin{{document}}\n {}", qol_customizations())),
         Token::FileEnd => Some(format!("\\end{{document}}")),
-        Token::Heading(level) => match level {
-            1 => Some(format!("\\section{{{}}}\n", contents.line)),
-            2 => Some(format!("\\subsection{{{}}}\n", contents.line)),
-            3 => Some(format!("\\subsubsection{{{}}}\n", contents.line)),
-            _ => Some(format!("\\subsubsection{{{}}}\n", contents.line)),
-        },
-        Token::UnorderedList | Token::OrderedList(_) => Some(listify(contents)),
-        Token::Text => Some(contents.line),
-        Token::CodeBlock => Some(code_block(contents)),
-        Token::BlockQuote => Some(block_quote(&mut contents)),
-        _ => None,
+        Token::Blank => None,
+        _ => {
+            // Can unwrap since any other Token's line will not be None
+            // by Parser's design
+            let line = transpile_line(&mut contents.line).unwrap();
+            match contents.kind {
+                Token::Heading(level) => match level {
+                    1 => Some(format!("\\section{{{}}}\n", line)),
+                    2 => Some(format!("\\subsection{{{}}}\n", line)),
+                    3 => Some(format!("\\subsubsection{{{}}}\n", line)),
+                    _ => Some(format!("\\subsubsection{{{}}}\n", line)),
+                },
+                Token::UnorderedList | Token::OrderedList(_) => Some(listify(contents)),
+                Token::Text => Some(line),
+                Token::CodeBlock => Some(code_block(contents)),
+                Token::BlockQuote => Some(block_quote(&mut contents)),
+                _ => None
+            }
+        }
     }
 }
 
-fn transpile_line(line: &mut String) -> String {
-    *line = re::bold(line);
-    *line = re::italicize(line);
-    *line = re::inline_code(line);
-    *line = re::strike_out(line);
-    *line = re::symbols(line);
-    *line = re::links(line);
-    line.to_string()
+fn transpile_line(line: &mut Option<String>) -> Option<String> {
+    if let Some(line) = line {
+        *line = re::bold(line);
+        *line = re::italicize(line);
+        *line = re::inline_code(line);
+        *line = re::strike_out(line);
+        *line = re::symbols(line);
+        *line = re::links(line);
+        Some(line.to_string())
+    } else {
+        None
+    }
 }
 
 fn block_quote(contents: &mut parser::Contents) -> String {
-    contents.line = re::replace_block_quote(&contents.line);
+    // Can unwrap since any group item will not be None per Parser's
+    // design
+    let line =  re::replace_block_quote(&contents.line.as_ref().unwrap());
     type Chronology = parser::Chronology;
     match contents.chron {
         Chronology::Start => {
-            format!("\\begin{{quote}}\n    {}\\\\", contents.line)
+            format!("\\begin{{quote}}\n    {}\\\\", line)
         }
-        Chronology::Middle => format!("    {}\\\\", contents.line),
-        Chronology::End => format!("    {}\n\\end{{quote}}\n", contents.line),
-        Chronology::None => format!("\\begin{{quote}}\n    {}\n\\end{{quote}}\n", contents.line),
+        Chronology::Middle => format!("    {}\\\\", line),
+        Chronology::End => format!("    {}\n\\end{{quote}}\n", line),
+        Chronology::None => format!("\\begin{{quote}}\n    {}\n\\end{{quote}}\n", line),
     }
 }
 
 fn listify(contents: parser::Contents) -> String {
     type Chronology = parser::Chronology;
     type Token = lexer::Token;
+    // Can unwrap since any group item will not be None per Parser's
+    // design
+    let line = contents.line.unwrap();
     if let Token::UnorderedList = contents.kind {
         match contents.chron {
             Chronology::Start => {
-                format!("\\begin{{itemize}}\n    \\item {}", contents.line)
+                format!("\\begin{{itemize}}\n    \\item {}", line)
             }
-            Chronology::Middle => format!("    \\item {}", contents.line),
-            Chronology::End => format!("    \\item {}\n\\end{{itemize}}\n", contents.line),
+            Chronology::Middle => format!("    \\item {}", line),
+            Chronology::End => format!("    \\item {}\n\\end{{itemize}}\n", line),
             Chronology::None => format!(
                 "\\begin{{enumerate}}\n    \\item {}\n\\end{{enumerate}}\n",
-                contents.line
+                line
             ),
         }
     } else if let Token::OrderedList(num) = contents.kind {
@@ -63,12 +79,12 @@ fn listify(contents: parser::Contents) -> String {
             Chronology::Start => {
                 format!(
                     "\\begin{{enumerate}}\n    \\setcounter{{enumi}}{{{}}}\n    \\item {}",
-                num - 1, contents.line
+                num - 1, line
                 )
             },
-            Chronology::Middle => format!("    \\item {}", contents.line),
-            Chronology::End => format!("    \\item {}\n\\end{{enumerate}}\n", contents.line),
-            Chronology::None => format!("\\begin{{enumerate}}\n    \\setcounter{{enumi}}{{{}}}\n    \\item {}\n\\end{{enumerate}}\n", num - 1, contents.line),
+            Chronology::Middle => format!("    \\item {}", line),
+            Chronology::End => format!("    \\item {}\n\\end{{enumerate}}\n", line),
+            Chronology::None => format!("\\begin{{enumerate}}\n    \\setcounter{{enumi}}{{{}}}\n    \\item {}\n\\end{{enumerate}}\n", num - 1, line),
         }
     } else {
         "".to_string()
