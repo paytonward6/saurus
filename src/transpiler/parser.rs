@@ -74,7 +74,10 @@ impl Parser {
         let mut iter = lexer.results.into_iter().peekable();
         while let Some(item) = iter.next() {
             let current = item;
-            if let Some(next) = iter.peek() {
+            if current.token == Token::Blank {
+                continue
+            }
+            else if let Some(next) = iter.peek() {
                 if lexer::Lexer::is_group(&current.token) {
                     if let Some(contents) = self.group_to_contents(current, next) {
                         self.previous = Previous::from(&contents);
@@ -96,7 +99,7 @@ impl Parser {
                     Chronology::None,
                 ));
             }
-            //println!("{:?}", self.previous);
+            println!("{:?}", self.previous);
         }
     }
 
