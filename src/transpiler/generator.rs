@@ -2,27 +2,30 @@ use crate::transpiler::{lexer, parser, re};
 
 pub fn generate_line(mut contents: parser::Contents) -> Option<String> {
     type Token = lexer::Token;
-    match contents.kind {
-        Token::FileStart => Some(format!("\\begin{{document}}\n {}", qol_customizations())),
-        Token::FileEnd => Some(format!("\\end{{document}}")),
-        Token::Blank => None,
-        _ => {
-            // Can unwrap since any other Token's line will not be None
-            // by Parser's design
-            let line = transpile_line(&mut contents.line).unwrap();
-            match contents.kind {
-                Token::Heading(level) => match level {
-                    1 => Some(format!("\\section{{{}}}\n", line)),
-                    2 => Some(format!("\\subsection{{{}}}\n", line)),
-                    3 => Some(format!("\\subsubsection{{{}}}\n", line)),
-                    _ => Some(format!("\\subsubsection{{{}}}\n", line)),
-                },
-                Token::UnorderedList | Token::OrderedList(_) => Some(listify(contents)),
-                Token::Text => Some(line),
-                Token::CodeBlock => Some(code_block(contents)),
-                Token::BlockQuote => Some(block_quote(&mut contents)),
-                _ => None
-            }
+    if let None = contents.line {
+        match contents.kind {
+            Token::FileStart => Some(format!("\\begin{{document}}\n {}", qol_customizations())),
+            Token::FileEnd => Some(format!("\\end{{document}}")),
+            Token::OrderedList(_) => Some(format!("{}\\end{{enumerate}}", indent(contents.indent_level))),
+            Token::UnorderedList => Some(format!("{}\\end{{itemize}}", indent(contents.indent_level))),
+            _ => None
+        }
+    } else {
+        // Can unwrap since any other Token's line will not be None
+        // by Parser's design
+        let line = transpile_line(&mut contents.line).unwrap();
+        match contents.kind {
+            Token::Heading(level) => match level {
+                1 => Some(format!("\\section{{{}}}\n", line)),
+                2 => Some(format!("\\subsection{{{}}}\n", line)),
+                3 => Some(format!("\\subsubsection{{{}}}\n", line)),
+                _ => Some(format!("\\subsubsection{{{}}}\n", line)),
+            },
+            Token::UnorderedList | Token::OrderedList(_) => Some(listify(contents)),
+            Token::Text => Some(line),
+            Token::CodeBlock => Some(code_block(contents)),
+            Token::BlockQuote => Some(block_quote(&mut contents)),
+            _ => None
         }
     }
 }
@@ -63,15 +66,20 @@ fn listify(contents: parser::Contents) -> String {
     // design
     let line = contents.line.unwrap();
     if let Token::UnorderedList = contents.kind {
+        let indent = indent(contents.indent_level);
+        println!("{:?} => \"{}\"", line, indent);
         match contents.chron {
             Chronology::Start => {
-                format!("\\begin{{itemize}}\n    \\item {}", line)
+                format!("{}\\begin{{itemize}}\n    {}\\item {}", indent, indent, line)
             }
-            Chronology::Middle => format!("    \\item {}", line),
-            Chronology::End => format!("    \\item {}\n\\end{{itemize}}\n", line),
+            Chronology::Middle => format!("{}    \\item {}", indent, line),
+            Chronology::End => format!("{}    \\item {}\n{}\\end{{itemize}}\n", indent, line, indent),
             Chronology::None => format!(
-                "\\begin{{enumerate}}\n    \\item {}\n\\end{{enumerate}}\n",
-                line
+                "{}\\begin{{itemize}}\n    {}\\item {}\n{}\\end{{itemize}}\n",
+                indent,
+                indent,
+                line,
+                indent,
             ),
         }
     } else if let Token::OrderedList(num) = contents.kind {
@@ -158,6 +166,10 @@ pub fn hyperlink_customizations() -> &'static str {
         urlcolor=blue,
     }";
     HYPERLINK
+}
+
+pub fn indent(indent_level: usize) -> String {
+    return "    ".repeat(indent_level)
 }
 
 pub fn qol_customizations() -> &'static str {

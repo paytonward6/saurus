@@ -7,23 +7,25 @@ use crate::transpiler::re;
 
 #[derive(Debug)]
 pub struct Parser {
-    pub stack: Vec<lexer::Token>,
+    pub records: Vec<usize>,
     pub results: Vec<Contents>,
-    pub previous: Previous,
+    pub previous: Record,
     pub contains_code_block: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Contents {
     pub line: Option<String>,
     pub kind: lexer::Token,
+    pub indent_level: usize,
     pub chron: Chronology,
 }
 
 #[derive(Debug)]
-pub struct Previous {
+pub struct Record {
     pub kind: lexer::Token,
     pub chron: Chronology,
+    pub indent_level: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -34,32 +36,38 @@ pub enum Chronology {
     None,
 }
 
-impl From<&Contents> for Previous {
+impl From<&Contents> for Record {
     fn from(contents: &Contents) -> Self {
-        Previous {
+        Record {
             kind: contents.kind,
             chron: contents.chron,
+            indent_level: contents.indent_level,
         }
     }
 }
 
 impl Contents {
-    fn new(line: Option<String>, kind: lexer::Token, chron: Chronology) -> Self {
-        Contents { line, kind, chron }
+    fn new(info: lexer::Info, chron: Chronology) -> Self {
+        Contents { line: info.line, kind: info.token, indent_level: info.indent_level, chron }
+    }
+
+    fn new_with_line(line: Option<String>, info: lexer::Info, chron: Chronology) -> Self {
+        Contents { line, kind: info.token, indent_level: info.indent_level, chron }
     }
 }
 
 impl Parser {
     pub fn new() -> Parser {
-        let stack: Vec<lexer::Token> = Vec::new();
-        let previous = Previous {
+        let records: Vec<usize> = Vec::new();
+        let previous = Record {
             kind: Token::FileStart,
             chron: Chronology::None,
+            indent_level: 0,
         };
         let results: Vec<Contents> = Vec::new();
         let contains_code_block = false;
         Parser {
-            stack,
+            records,
             results,
             previous,
             contains_code_block,
@@ -71,36 +79,44 @@ impl Parser {
             self.contains_code_block = true;
         }
 
-        let mut iter = lexer.results.into_iter().peekable();
+        let mut iter = lexer.results.into_iter().enumerate().peekable();
         while let Some(item) = iter.next() {
-            let current = item;
-            if current.token == Token::Blank {
-                continue
-            }
-            else if let Some(next) = iter.peek() {
+            let (number, current) = item;
+            if let Some((_, next)) = iter.peek() {
                 if lexer::Lexer::is_group(&current.token) {
                     if let Some(contents) = self.group_to_contents(current, next) {
-                        self.previous = Previous::from(&contents);
+                        if contents.chron == Chronology::Start {
+                            self.records.push(number);
+                        }
+                        else if contents.chron == Chronology::End {
+                            self.records.pop();
+                        }
+                        self.previous = Record::from(&contents);
                         self.results.push(contents);
                     }
                 } else {
+                    // Close open lists up to that point
+                    for record in self.records.iter() {
+                        let contents = self.results.get(*record).unwrap();
+                        self.results.push(Contents {
+                            line: None,
+                            kind: contents.kind,
+                            chron: Chronology::End,
+                            indent_level: contents.indent_level,
+                        });
+                    }
+                    self.records.clear();
                     let contents = Contents::new(
-                        current.line,
-                        current.token,
+                        current,
                         Chronology::None,
                     );
-                    self.previous = Previous::from(&contents);
+                    self.previous = Record::from(&contents);
                     self.results.push(contents);
                 }
-            } else {
-                self.results.push(Contents::new(
-                    None,
-                    current.token,
-                    Chronology::None,
-                ));
             }
-            println!("{:?}", self.previous);
         }
+        self.results.push(Contents {line: None, kind: Token::FileEnd, indent_level: 0, chron: Chronology::None});
+        println!("{:#?}", self.results);
     }
 
     fn group_to_contents(&self, current: lexer::Info, next: &lexer::Info) -> Option<Contents> {
@@ -119,20 +135,26 @@ impl Parser {
                     );
                     language = "python".to_string();
                 };
-                return Some(Contents::new(Some(language), current.token, Chronology::Start))
+                return Some(Contents::new_with_line(Some(language), current, Chronology::Start))
             } else {
-                return Some(Contents::new(current.line, current.token, Chronology::End))
+                return Some(Contents::new(current, Chronology::End))
             }
-        } else if token_discrim != prev_discrim && token_discrim != next_discrim {
-            return Some(Contents::new(current.line, current.token, Chronology::None));
+        } else if current.indent_level > self.previous.indent_level && current.indent_level > next.indent_level {
+            return Some(Contents::new(current, Chronology::None));
+        } else if current.indent_level > self.previous.indent_level {
+            return Some(Contents::new(current, Chronology::Start))
+        } else if current.indent_level > next.indent_level {
+            return Some(Contents::new(current, Chronology::End))
+        }  else if token_discrim != prev_discrim && token_discrim != next_discrim {
+            return Some(Contents::new(current, Chronology::None));
         } else if token_discrim != next_discrim {
-            return Some(Contents::new(current.line, current.token, Chronology::End));
+            return Some(Contents::new(current, Chronology::End));
         } else if token_discrim != prev_discrim
-            || (token_discrim == prev_discrim && self.previous.chron == Chronology::End)
+            //|| (token_discrim == prev_discrim && self.previous.chron == Chronology::End)
         {
-            return Some(Contents::new(current.line, current.token, Chronology::Start));
+            return Some(Contents::new(current, Chronology::Start));
         } else if token_discrim == prev_discrim && token_discrim == next_discrim {
-            return Some(Contents::new(current.line, current.token, Chronology::Middle));
+            return Some(Contents::new(current, Chronology::Middle));
         }
         None
     }
