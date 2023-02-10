@@ -6,13 +6,17 @@ pub fn generate_line(mut contents: parser::Contents) -> Option<String> {
         match contents.kind {
             Token::FileStart => Some(format!("\\begin{{document}}\n {}", qol_customizations())),
             Token::FileEnd => Some(format!("\\end{{document}}")),
-            Token::OrderedList(_) => Some(format!("{}\\end{{enumerate}}", indent(contents.indent_level))),
-            Token::UnorderedList => Some(format!("{}\\end{{itemize}}", indent(contents.indent_level))),
-            _ => None
+            Token::OrderedList(_) => Some(format!(
+                "{}\\end{{enumerate}}",
+                indent(contents.indent_level)
+            )),
+            Token::UnorderedList => {
+                Some(format!("{}\\end{{itemize}}", indent(contents.indent_level)))
+            }
+            _ => None,
         }
     } else {
-        // Can unwrap since any other Token's line will not be None
-        // by Parser's design
+        // Can unwrap since line is not None
         let line = transpile_line(&mut contents.line).unwrap();
         match contents.kind {
             Token::Heading(level) => match level {
@@ -25,9 +29,13 @@ pub fn generate_line(mut contents: parser::Contents) -> Option<String> {
             Token::Text => Some(line),
             Token::CodeBlock => Some(code_block(contents)),
             Token::BlockQuote => Some(block_quote(&mut contents)),
-            _ => None
+            _ => None,
         }
     }
+}
+
+pub fn indent(indent_level: usize) -> String {
+    return "    ".repeat(indent_level);
 }
 
 fn transpile_line(line: &mut Option<String>) -> Option<String> {
@@ -47,7 +55,7 @@ fn transpile_line(line: &mut Option<String>) -> Option<String> {
 fn block_quote(contents: &mut parser::Contents) -> String {
     // Can unwrap since any group item will not be None per Parser's
     // design
-    let line =  re::replace_block_quote(&contents.line.as_ref().unwrap());
+    let line = re::replace_block_quote(&contents.line.as_ref().unwrap());
     type Chronology = parser::Chronology;
     match contents.chron {
         Chronology::Start => {
@@ -70,16 +78,19 @@ fn listify(contents: parser::Contents) -> String {
         println!("{:?} => \"{}\"", line, indent);
         match contents.chron {
             Chronology::Start => {
-                format!("{}\\begin{{itemize}}\n    {}\\item {}", indent, indent, line)
+                format!(
+                    "{}\\begin{{itemize}}\n    {}\\item {}",
+                    indent, indent, line
+                )
             }
             Chronology::Middle => format!("{}    \\item {}", indent, line),
-            Chronology::End => format!("{}    \\item {}\n{}\\end{{itemize}}\n", indent, line, indent),
+            Chronology::End => format!(
+                "{}    \\item {}\n{}\\end{{itemize}}\n",
+                indent, line, indent
+            ),
             Chronology::None => format!(
                 "{}\\begin{{itemize}}\n    {}\\item {}\n{}\\end{{itemize}}\n",
-                indent,
-                indent,
-                line,
-                indent,
+                indent, indent, line, indent,
             ),
         }
     } else if let Token::OrderedList(num) = contents.kind {
@@ -166,10 +177,6 @@ pub fn hyperlink_customizations() -> &'static str {
         urlcolor=blue,
     }";
     HYPERLINK
-}
-
-pub fn indent(indent_level: usize) -> String {
-    return "    ".repeat(indent_level)
 }
 
 pub fn qol_customizations() -> &'static str {

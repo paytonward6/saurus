@@ -48,11 +48,21 @@ impl From<&Contents> for Record {
 
 impl Contents {
     fn new(info: lexer::Info, chron: Chronology) -> Self {
-        Contents { line: info.line, kind: info.token, indent_level: info.indent_level, chron }
+        Contents {
+            line: info.line,
+            kind: info.token,
+            indent_level: info.indent_level,
+            chron,
+        }
     }
 
     fn new_with_line(line: Option<String>, info: lexer::Info, chron: Chronology) -> Self {
-        Contents { line, kind: info.token, indent_level: info.indent_level, chron }
+        Contents {
+            line,
+            kind: info.token,
+            indent_level: info.indent_level,
+            chron,
+        }
     }
 }
 
@@ -75,7 +85,11 @@ impl Parser {
     }
 
     pub fn run(&mut self, lexer: lexer::Lexer) {
-        if lexer.results.iter().any(|item| item.token == Token::CodeBlock) {
+        if lexer
+            .results
+            .iter()
+            .any(|item| item.token == Token::CodeBlock)
+        {
             self.contains_code_block = true;
         }
 
@@ -85,17 +99,18 @@ impl Parser {
             if let Some((_, next)) = iter.peek() {
                 if lexer::Lexer::is_group(&current.token) {
                     if let Some(contents) = self.group_to_contents(current, next) {
+                        // Keep track of the indices of the open groups in results
                         if contents.chron == Chronology::Start {
                             self.records.push(number);
-                        }
-                        else if contents.chron == Chronology::End {
+                        } else if contents.chron == Chronology::End {
                             self.records.pop();
                         }
+
                         self.previous = Record::from(&contents);
                         self.results.push(contents);
                     }
                 } else {
-                    // Close open lists up to that point
+                    // Close open blocks up to that point since interrupted
                     for record in self.records.iter() {
                         let contents = self.results.get(*record).unwrap();
                         self.results.push(Contents {
@@ -106,17 +121,18 @@ impl Parser {
                         });
                     }
                     self.records.clear();
-                    let contents = Contents::new(
-                        current,
-                        Chronology::None,
-                    );
+                    let contents = Contents::new(current, Chronology::None);
                     self.previous = Record::from(&contents);
                     self.results.push(contents);
                 }
             }
         }
-        self.results.push(Contents {line: None, kind: Token::FileEnd, indent_level: 0, chron: Chronology::None});
-        println!("{:#?}", self.results);
+        self.results.push(Contents {
+            line: None,
+            kind: Token::FileEnd,
+            indent_level: 0,
+            chron: Chronology::None,
+        });
     }
 
     fn group_to_contents(&self, current: lexer::Info, next: &lexer::Info) -> Option<Contents> {
@@ -127,30 +143,35 @@ impl Parser {
         if let Token::CodeBlock = current.token {
             if let Some(language) = re::replace_code_block(current.line.as_ref().map(|x| &**x)) {
                 let mut language = language;
-                if code_blocks::is_invalid_language(&language)
-                {
+                if code_blocks::is_invalid_language(&language) {
                     eprintln!(
                         "Language \"{}\" not found. Using default of \"python\".",
                         language
                     );
                     language = "python".to_string();
                 };
-                return Some(Contents::new_with_line(Some(language), current, Chronology::Start))
+                return Some(Contents::new_with_line(
+                    Some(language),
+                    current,
+                    Chronology::Start,
+                ));
             } else {
-                return Some(Contents::new(current, Chronology::End))
+                return Some(Contents::new(current, Chronology::End));
             }
-        } else if current.indent_level > self.previous.indent_level && current.indent_level > next.indent_level {
+        } else if current.indent_level > self.previous.indent_level
+            && current.indent_level > next.indent_level
+        {
             return Some(Contents::new(current, Chronology::None));
         } else if current.indent_level > self.previous.indent_level {
-            return Some(Contents::new(current, Chronology::Start))
+            return Some(Contents::new(current, Chronology::Start));
         } else if current.indent_level > next.indent_level {
-            return Some(Contents::new(current, Chronology::End))
-        }  else if token_discrim != prev_discrim && token_discrim != next_discrim {
+            return Some(Contents::new(current, Chronology::End));
+        } else if token_discrim != prev_discrim && token_discrim != next_discrim {
             return Some(Contents::new(current, Chronology::None));
         } else if token_discrim != next_discrim {
             return Some(Contents::new(current, Chronology::End));
         } else if token_discrim != prev_discrim
-            //|| (token_discrim == prev_discrim && self.previous.chron == Chronology::End)
+        //|| (token_discrim == prev_discrim && self.previous.chron == Chronology::End)
         {
             return Some(Contents::new(current, Chronology::Start));
         } else if token_discrim == prev_discrim && token_discrim == next_discrim {
