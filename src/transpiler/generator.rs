@@ -124,13 +124,14 @@ fn code_block(content: parser::Contents) -> String {
     }
 }
 
-const PACKAGES: [&str; 6] = [
+const PACKAGES: [&str; 7] = [
     "geometry",
     "ulem",
     "listings",
     "hyperref",
     "xcolor",
     "indentfirst",
+    "enumitem",
 ];
 
 pub fn packages(contains_code_block: bool) -> String {
