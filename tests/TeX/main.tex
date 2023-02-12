@@ -7,20 +7,6 @@
 \usepackage{xcolor}
 \usepackage{indentfirst}
 
-    \definecolor{codegreen}{rgb}{0, 0.6, 0}
-    \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
-    \lstdefinestyle{myStyle}{
-        keywordstyle=\color{blue},
-        identifierstyle=\color{violet},
-        commentstyle=\color{codegreen},
-        backgroundcolor=\color{backcolour},
-        %basicstyle=\normal,
-        showspaces=false,
-        showstringspaces=false,
-        keepspaces=true,
-        extendedchars=true,
-        %numbers=left,
-    }
     \hypersetup{
         colorlinks=true,
         linkcolor=blue,
@@ -31,70 +17,38 @@
  
 \setcounter{secnumdepth}{0}
 
-\begin{quote}
-    My\\
-    Block\\
-    Quote\\
-    Two
-\end{quote}
-
-links not working with: (\href{https://ctan.org/pkg/required}{required package} in all LaTeX distributions))
 \section{Heading 1}
 
 \begin{itemize}
-    \item \textit{baz}
-    \item qux
+    \item item 1
+    \begin{itemize}
+        \item nested item 1
+        \begin{itemize}
+            \item nested nested
+        \end{itemize}
+
+        \item nested item 2
+    \end{itemize}
+
+    \item item 2
+    \item item 3
 \end{itemize}
-
-\begin{lstlisting}[language=c, style=myStyle]
-int main() {
-    printf("%d", i);
-}
-\end{lstlisting}
-
-this is a normal line
-\begin{lstlisting}[language=python, style=myStyle]
-% derived parameters
-k = 1/SR;                    % time step
-coef = 2-k^2\textit{(2}pi*f0)^2;    % scheme update coefficient
-NF = floor(TF*SR);           % duration of simulation (samples)
-\end{lstlisting}
-
-\begin{quote}
-    My\\
-    Block\\
-    Quote\\
-    One
-\end{quote}
 
 \subsection{Heading 2}
 
-\begin{enumerate}
-    \setcounter{enumi}{0}
-    \item foo
-    \item bar
-    \item baz
-\end{enumerate}
+\begin{itemize}
+    \item item 1
+    \begin{itemize}
+        \item nested item 1
+        \begin{itemize}
+            \item nested nested
+        \end{itemize}
 
-\begin{enumerate}
-    \setcounter{enumi}{19}
-    \item this
-    \item is. \verb|x = 2|
-    \item \textbf{blah} \textit{hi}
-    \item \sout{strike}
-\end{enumerate}
+        \item nested item 2
+    \end{itemize}
 
-\subsubsection{This is my new heading}
-
-\subsubsection{Another heading}
-
-test 
-\begin{enumerate}
-    \setcounter{enumi}{19}
-    \item this
-    \item is. \verb|x = 2|
-    \item \textbf{blah} \textit{hi}
-    \item \sout{strike}
-\end{enumerate}
+    \item item 2
+    \item item 3
+\end{itemize}
 
 \end{document}

@@ -69,8 +69,9 @@ impl Lexer {
                 self.results
                     .push(Info::new(Token::UnorderedList, Some(line), indent_level));
             } else if line.is_empty() {
-                self.results
-                    .push(Info::new(Token::Blank, None, indent_level));
+                continue;
+                //self.results
+                //    .push(Info::new(Token::Blank, None, indent_level));
             } else if re::is_ordered_list(&line) {
                 let (number, line) = re::replace_ordered_list(&line);
                 self.results.push(Info::new(
