@@ -17,9 +17,10 @@ $ saurus -i input.md -o out.tex
 - Source Code Blocks
 - Inline Code
 - Block Quotes
+- Nested Unordered Lists
 
 ### Pending Support
-- Nested Lists
+- Nested Ordered Lists
 - Continuation of Lists when interrupted by blocks
 
 ## LaTeX packages required

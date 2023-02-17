@@ -75,7 +75,6 @@ fn listify(contents: parser::Contents) -> String {
     let line = contents.line.unwrap();
     if let Token::UnorderedList = contents.kind {
         let indent = indent(contents.indent_level);
-        println!("{:?} => \"{}\"", line, indent);
         match contents.chron {
             Chronology::Start => {
                 format!(
