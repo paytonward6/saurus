@@ -7,7 +7,7 @@ use crate::transpiler::re;
 
 #[derive(Debug)]
 pub struct Parser {
-    pub records: Vec<usize>,
+    pub records: Vec<Record>,
     pub results: Vec<Contents>,
     pub previous: Record,
     pub contains_code_block: bool,
@@ -68,7 +68,7 @@ impl Contents {
 
 impl Parser {
     pub fn new() -> Parser {
-        let records: Vec<usize> = Vec::new();
+        let records: Vec<Record> = Vec::new();
         let previous = Record {
             kind: Token::FileStart,
             chron: Chronology::None,
@@ -95,31 +95,22 @@ impl Parser {
 
         let mut iter = lexer.results.into_iter().enumerate().peekable();
         while let Some(item) = iter.next() {
-            let (number, current) = item;
+            let (_number, current) = item;
             if let Some((_, next)) = iter.peek() {
                 if lexer::Lexer::is_group(&current.token) {
                     if let Some(contents) = self.group_to_contents(current, next) {
                         // Keep track of the indices of the open groups in results
                         if contents.chron == Chronology::Start {
-                            self.records.push(number);
+                            self.records.push(Record::from(&contents));
                         } else if contents.chron == Chronology::End {
                             self.records.pop();
                         }
-
                         self.previous = Record::from(&contents);
                         self.results.push(contents);
                     }
                 } else {
                     // Close open blocks up to that point since interrupted
-                    for record in self.records.iter() {
-                        let contents = self.results.get(*record).unwrap();
-                        self.results.push(Contents {
-                            line: None,
-                            kind: contents.kind,
-                            chron: Chronology::End,
-                            indent_level: contents.indent_level,
-                        });
-                    }
+                    self.close_open_blocks();
                     self.records.clear();
                     let contents = Contents::new(current, Chronology::None);
                     self.previous = Record::from(&contents);
@@ -127,12 +118,25 @@ impl Parser {
                 }
             }
         }
+        self.close_open_blocks();
         self.results.push(Contents {
             line: None,
             kind: Token::FileEnd,
             indent_level: 0,
             chron: Chronology::None,
         });
+    }
+
+    fn close_open_blocks(&mut self) {
+        for record in self.records.iter() {
+            println!("{:?}", record.kind);
+            self.results.push(Contents {
+                line: None,
+                kind: record.kind,
+                chron: Chronology::End,
+                indent_level: record.indent_level,
+            });
+        }
     }
 
     fn group_to_contents(&self, current: lexer::Info, next: &lexer::Info) -> Option<Contents> {

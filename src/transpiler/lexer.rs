@@ -57,9 +57,12 @@ impl Lexer {
     pub fn tokenize(&mut self, file_str: &str) {
         self.results.push(Info::new(Token::FileStart, None, 0));
         for (_line_number, line) in file_str.lines().enumerate() {
+            if line.trim().is_empty() {
+                continue
+            }
+
             let indent_level = re::indent_level(line);
             let line = line.to_string();
-
             if re::is_heading(&line) {
                 let (level, line) = re::parse_heading(&line);
                 self.results
@@ -68,10 +71,6 @@ impl Lexer {
                 let line = re::replace_unordered_list(&line);
                 self.results
                     .push(Info::new(Token::UnorderedList, Some(line), indent_level));
-            } else if line.is_empty() {
-                continue;
-                //self.results
-                //    .push(Info::new(Token::Blank, None, indent_level));
             } else if re::is_ordered_list(&line) {
                 let (number, line) = re::replace_ordered_list(&line);
                 self.results.push(Info::new(
