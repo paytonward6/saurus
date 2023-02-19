@@ -1,31 +1,34 @@
-use std::fs;
-use std::path::PathBuf;
+use std::{fs, path::PathBuf, process};
 
-use clap::{arg, command, value_parser};
+use clap::{arg, command, Parser};
 
 use saurus::transpiler;
 
-fn main() {
-    let matches = command!()
-        .arg(
-            arg!(
-                -i --input <FILE> "Sets a custom input file"
-            )
-            .required(true)
-            .value_parser(value_parser!(PathBuf)),
-        )
-        .arg(
-            arg!(
-                -o --output <FILE> "Sets a custom output file"
-            )
-            .required(true)
-            .value_parser(value_parser!(PathBuf)),
-        )
-        .get_matches();
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    input: String,
+    #[arg(short, long)]
+    output: Option<String>,
+}
 
-    let input = matches.get_one::<PathBuf>("input").unwrap();
-    let output = matches.get_one::<PathBuf>("output").unwrap();
+fn main() {
+    let cli = Cli::parse();
+
+    let input = PathBuf::from(cli.input);
+    if !input.exists() {
+        eprintln!("{:?} does not exist or file permissions deny use!", input);
+        process::exit(1);
+    }
+
+    let output = if let Some(output) = cli.output {
+        PathBuf::from(output)
+    } else {
+        let mut file = input.clone();
+        file.set_extension("tex");
+        file
+    };
 
     let file_str = fs::read_to_string(input).expect("Unable to read from file!");
-    transpiler::run(&file_str, output);
+    transpiler::run(&file_str, &output);
 }

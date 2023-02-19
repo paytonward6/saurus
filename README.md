@@ -4,7 +4,11 @@ Markdown &rarr; LaTeX transpiler
 
 ## Usage
 ```sh
-$ saurus -i input.md -o out.tex
+$ saurus input.md -o out.tex
+```
+or
+```sh
+$ saurus input.md # will use input.tex as output
 ```
 
 ### Currently supports
