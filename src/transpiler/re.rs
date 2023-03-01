@@ -53,9 +53,10 @@ pub fn parse_heading(line: &str) -> (usize, String) {
 /// use saurus::transpiler::re;
 /// assert!(re::is_unordered_list(r"- Contents here!"));
 /// assert!(re::is_unordered_list(r"+ Contents here!"));
+/// assert!(!re::is_unordered_list(r"**Contents here!**"));
 ///```
 pub fn is_unordered_list(line: &str) -> bool {
-    let re: Regex = Regex::new(r"^\s*[\-\+\*]\s*").unwrap();
+    let re: Regex = Regex::new(r"^\s*[\-\+\*]{1}\s+").unwrap();
     re.is_match(line)
 }
 
@@ -66,7 +67,7 @@ pub fn is_unordered_list(line: &str) -> bool {
 /// assert_eq!(re::replace_unordered_list(&mut "+ Contents here!"), contents);
 ///```
 pub fn replace_unordered_list(line: &str) -> String {
-    let re: Regex = Regex::new(r"^\s*[\-\+\*]\s*").unwrap();
+    let re: Regex = Regex::new(r"^\s*[\-\+\*]{1}\s*").unwrap();
     re.replace(line, "").to_string()
 }
 
@@ -155,6 +156,7 @@ pub fn bold(line: &mut String) -> String {
 ///```
 /// use saurus::transpiler::re;
 /// assert_eq!(re::italicize(&mut "*italicize me*".to_string()), r"\textit{italicize me}".to_string());
+/// assert_ne!(re::italicize(&mut "**italicize me**".to_string()), r"\textit{italicize me}*".to_string());
 ///```
 pub fn italicize(line: &mut String) -> String {
     //Option<String>
