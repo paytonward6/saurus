@@ -13,6 +13,7 @@ pub fn generate_line(mut contents: parser::Contents) -> Option<String> {
             Token::UnorderedList => {
                 Some(format!("{}\\end{{itemize}}", indent(contents.indent_level)))
             }
+            Token::Blank => Some("".to_string()), // blank line
             _ => None,
         }
     } else {

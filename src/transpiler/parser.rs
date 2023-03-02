@@ -5,6 +5,8 @@ use crate::transpiler::lexer;
 use crate::transpiler::lexer::Token;
 use crate::transpiler::re;
 
+use itertools::Itertools;
+
 #[derive(Debug)]
 pub struct Parser {
     pub records: Vec<Record>,
@@ -84,6 +86,27 @@ impl Parser {
         }
     }
 
+
+    //fn blah(iter: &mut itertools::MultiPeek<std::iter::Enumerate<std::vec::IntoIter<lexer::Info>>>) -> Option<&lexer::Info> {
+    //    let next: Option<&lexer::Info> = {
+    //        let mut to_return = iter.peek();
+    //        loop {
+    //            if let Some((_, next)) = to_return {
+    //                if next.token != Token::Blank {
+    //                    break Some(next)
+    //                }
+    //                else {
+    //                    to_return = iter.peek();
+    //                }
+    //            } else {
+    //                break None
+    //            }
+
+    //        }
+    //    };
+    //    next
+    //}
+
     pub fn run(&mut self, lexer: lexer::Lexer) {
         if lexer
             .results
@@ -93,28 +116,52 @@ impl Parser {
             self.contains_code_block = true;
         }
 
-        let mut iter = lexer.results.into_iter().enumerate().peekable();
+        let mut iter = lexer.results.into_iter().enumerate().multipeek();
         while let Some(item) = iter.next() {
             let (_number, current) = item;
-            if let Some((_, next)) = iter.peek() {
-                if lexer::Lexer::is_group(&current.token) {
-                    if let Some(contents) = self.group_to_contents(current, next) {
-                        // Keep track of the indices of the open groups in results
-                        if contents.chron == Chronology::Start {
-                            self.records.push(Record::from(&contents));
-                        } else if contents.chron == Chronology::End {
-                            self.records.pop();
+
+            if current.token == Token::Blank {
+                self.results.push(Contents::new(current, Chronology::None));
+            } else {
+                // Peek through iterator until we reach a non-blank line
+                let next: Option<&lexer::Info> = {
+                    let mut to_return = iter.peek();
+                    loop {
+                        if let Some((_, next)) = to_return {
+                            if next.token != Token::Blank {
+                                break Some(next)
+                            }
+                            else {
+                                to_return = iter.peek();
+                            }
+                        } else {
+                            break None
                         }
+
+                    }
+                };
+
+                if let Some(next) = next {
+                    if lexer::Lexer::is_group(&current.token) {
+                        if let Some(contents) = self.group_to_contents(current, next) {
+                            // Keep track of the indices of the open groups in results
+                            if contents.chron == Chronology::Start {
+                                self.records.push(Record::from(&contents));
+                            } else if contents.chron == Chronology::End {
+                                self.records.pop();
+                            }
+                            self.previous = Record::from(&contents);
+                            self.results.push(contents);
+                        }
+                    } else if let Token::Blank = current.token {
+                    } else {
+                        // Close open blocks up to that point since interrupted
+                        self.close_open_blocks();
+                        self.records.clear();
+                        let contents = Contents::new(current, Chronology::None);
                         self.previous = Record::from(&contents);
                         self.results.push(contents);
                     }
-                } else {
-                    // Close open blocks up to that point since interrupted
-                    self.close_open_blocks();
-                    self.records.clear();
-                    let contents = Contents::new(current, Chronology::None);
-                    self.previous = Record::from(&contents);
-                    self.results.push(contents);
                 }
             }
         }
@@ -129,7 +176,6 @@ impl Parser {
 
     fn close_open_blocks(&mut self) {
         for record in self.records.iter() {
-            println!("{:?}", record.kind);
             self.results.push(Contents {
                 line: None,
                 kind: record.kind,

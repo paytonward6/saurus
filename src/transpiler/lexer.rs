@@ -58,6 +58,7 @@ impl Lexer {
         self.results.push(Info::new(Token::FileStart, None, 0));
         for (_line_number, line) in file_str.lines().enumerate() {
             if line.trim().is_empty() {
+                self.results.push(Info::new(Token::Blank, None, 0));
                 continue
             }
 

@@ -10,4 +10,5 @@ repository = "https://github.com/paytonward6/saurus"
 
 [dependencies]
 clap = { version = "4.1.1", features = ["cargo", "derive"] }
+itertools = "0.10.5"
 regex = "1.7.1"
