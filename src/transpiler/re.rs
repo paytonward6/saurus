@@ -76,7 +76,7 @@ pub fn replace_unordered_list(line: &str) -> String {
 /// assert!(re::is_ordered_list("7. Contents here!"));
 ///```
 pub fn is_ordered_list(line: &str) -> bool {
-    let re: Regex = Regex::new(r"^\s*\d*[\.\)]").unwrap();
+    let re: Regex = Regex::new(r"^\s*\w*[\.\)]").unwrap();
     re.is_match(line)
 }
 
@@ -87,12 +87,28 @@ pub fn is_ordered_list(line: &str) -> bool {
 /// assert_eq!(contents, "Contents here!");
 ///```
 pub fn replace_ordered_list(line: &str) -> (usize, String) {
-    let re = Regex::new(r"(\d*)\.\s*(.*)").unwrap();
+    let re = Regex::new(r"(\w*)\.\s*(.*)").unwrap();
     let cap = re.captures(line).unwrap();
 
-    let number = cap.get(1).unwrap().as_str();
+    let bullet = cap.get(1).unwrap().as_str().trim();
+    let parsed_bullet = bullet.parse::<usize>();
+
     let contents = cap.get(2).unwrap().as_str();
-    (number.trim().parse().unwrap(), contents.to_string())
+
+    if let Ok(bullet) = parsed_bullet {
+        return (bullet, contents.to_string())
+    } else {
+        // TODO: Refactor at some point. Currently converts alphabetic lists to numeric
+        // Potentially make it OrderedList(char) instead of usize and convert later
+        let bullet = bullet.chars().next().unwrap() as char;
+        let bullet = bullet.to_ascii_uppercase() as usize;
+        return (bullet - 64, contents.to_string())
+    }
+}
+
+pub fn is_comment(line: &str) -> bool {
+    let re = Regex::new(r"^\s*<!--.*-->\s*").unwrap();
+    re.is_match(line)
 }
 
 ///```

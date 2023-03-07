@@ -16,6 +16,8 @@ pub enum Token {
     Text,
 
     Blank,
+
+    Comment,
 }
 
 #[derive(Debug)]
@@ -86,6 +88,8 @@ impl Lexer {
             } else if re::is_block_quote(&line) {
                 self.results
                     .push(Info::new(Token::BlockQuote, Some(line), indent_level));
+            } else if re::is_comment(&line) {
+                self.results.push(Info::new(Token::Comment, None, 0));
             } else if re::is_normal(&line) {
                 self.results
                     .push(Info::new(Token::Text, Some(line), indent_level));

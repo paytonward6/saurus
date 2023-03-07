@@ -11,7 +11,7 @@ use itertools::Itertools;
 pub struct Parser {
     pub records: Vec<Record>,
     pub results: Vec<Contents>,
-    pub previous: Record,
+    pub previous: Option<Record>,
     pub contains_code_block: bool,
 }
 
@@ -71,11 +71,11 @@ impl Contents {
 impl Parser {
     pub fn new() -> Parser {
         let records: Vec<Record> = Vec::new();
-        let previous = Record {
+        let previous = Some(Record {
             kind: Token::FileStart,
             chron: Chronology::None,
             indent_level: 0,
-        };
+        });
         let results: Vec<Contents> = Vec::new();
         let contains_code_block = false;
         Parser {
@@ -85,27 +85,6 @@ impl Parser {
             contains_code_block,
         }
     }
-
-
-    //fn blah(iter: &mut itertools::MultiPeek<std::iter::Enumerate<std::vec::IntoIter<lexer::Info>>>) -> Option<&lexer::Info> {
-    //    let next: Option<&lexer::Info> = {
-    //        let mut to_return = iter.peek();
-    //        loop {
-    //            if let Some((_, next)) = to_return {
-    //                if next.token != Token::Blank {
-    //                    break Some(next)
-    //                }
-    //                else {
-    //                    to_return = iter.peek();
-    //                }
-    //            } else {
-    //                break None
-    //            }
-
-    //        }
-    //    };
-    //    next
-    //}
 
     pub fn run(&mut self, lexer: lexer::Lexer) {
         if lexer
@@ -122,6 +101,12 @@ impl Parser {
 
             if current.token == Token::Blank {
                 self.results.push(Contents::new(current, Chronology::None));
+            } else if current.token == Token::Comment {
+                // Will not allow comment to break when used within nested list.
+                // Will instead close all blocks and start anew
+                self.close_open_blocks();
+                self.records.pop();
+                self.previous = None;
             } else {
                 // Peek through iterator until we reach a non-blank line
                 let next: Option<&lexer::Info> = {
@@ -150,7 +135,7 @@ impl Parser {
                             } else if contents.chron == Chronology::End {
                                 self.records.pop();
                             }
-                            self.previous = Record::from(&contents);
+                            self.previous = Some(Record::from(&contents));
                             self.results.push(contents);
                         }
                     } else if let Token::Blank = current.token {
@@ -159,7 +144,7 @@ impl Parser {
                         self.close_open_blocks();
                         self.records.clear();
                         let contents = Contents::new(current, Chronology::None);
-                        self.previous = Record::from(&contents);
+                        self.previous = Some(Record::from(&contents));
                         self.results.push(contents);
                     }
                 }
@@ -186,47 +171,53 @@ impl Parser {
     }
 
     fn group_to_contents(&self, current: lexer::Info, next: &lexer::Info) -> Option<Contents> {
-        let token_discrim = mem::discriminant(&current.token);
-        let next_discrim = mem::discriminant(&next.token);
-        let prev_discrim = mem::discriminant(&self.previous.kind);
 
-        if let Token::CodeBlock = current.token {
-            if let Some(language) = re::replace_code_block(current.line.as_ref().map(|x| &**x)) {
-                let mut language = language;
-                if code_blocks::is_invalid_language(&language) {
-                    eprintln!(
-                        "Language \"{}\" not found. Using default of \"python\".",
-                        language
-                    );
-                    language = "python".to_string();
-                };
-                return Some(Contents::new_with_line(
-                    Some(language),
-                    current,
-                    Chronology::Start,
-                ));
-            } else {
+        if let Some(previous) = &self.previous {
+            let token_discrim = mem::discriminant(&current.token);
+            let next_discrim = mem::discriminant(&next.token);
+            let prev_discrim = mem::discriminant(&previous.kind);
+
+            if let Token::CodeBlock = current.token {
+                if let Some(language) = re::replace_code_block(current.line.as_ref().map(|x| &**x)) {
+                    let mut language = language;
+                    if code_blocks::is_invalid_language(&language) {
+                        eprintln!(
+                            "Language \"{}\" not found. Using default of \"python\".",
+                            language
+                        );
+                        language = "python".to_string();
+                    };
+                    return Some(Contents::new_with_line(
+                        Some(language),
+                        current,
+                        Chronology::Start,
+                    ));
+                } else {
+                    return Some(Contents::new(current, Chronology::End));
+                }
+            } else if current.indent_level > previous.indent_level
+                && current.indent_level > next.indent_level
+            {
+                return Some(Contents::new(current, Chronology::None));
+            } else if current.indent_level > previous.indent_level {
+                return Some(Contents::new(current, Chronology::Start));
+            } else if current.indent_level > next.indent_level {
                 return Some(Contents::new(current, Chronology::End));
+            } else if token_discrim != prev_discrim && token_discrim != next_discrim {
+                return Some(Contents::new(current, Chronology::None));
+            } else if token_discrim != next_discrim {
+                return Some(Contents::new(current, Chronology::End));
+            } else if token_discrim != prev_discrim
+            //|| (token_discrim == prev_discrim && self.previous.chron == Chronology::End)
+            {
+                return Some(Contents::new(current, Chronology::Start));
+            } else if token_discrim == prev_discrim && token_discrim == next_discrim {
+                return Some(Contents::new(current, Chronology::Middle));
             }
-        } else if current.indent_level > self.previous.indent_level
-            && current.indent_level > next.indent_level
-        {
-            return Some(Contents::new(current, Chronology::None));
-        } else if current.indent_level > self.previous.indent_level {
+            None
+        } else {
+            // No Previous item to consider (must have been erased by a comment), so start anew
             return Some(Contents::new(current, Chronology::Start));
-        } else if current.indent_level > next.indent_level {
-            return Some(Contents::new(current, Chronology::End));
-        } else if token_discrim != prev_discrim && token_discrim != next_discrim {
-            return Some(Contents::new(current, Chronology::None));
-        } else if token_discrim != next_discrim {
-            return Some(Contents::new(current, Chronology::End));
-        } else if token_discrim != prev_discrim
-        //|| (token_discrim == prev_discrim && self.previous.chron == Chronology::End)
-        {
-            return Some(Contents::new(current, Chronology::Start));
-        } else if token_discrim == prev_discrim && token_discrim == next_discrim {
-            return Some(Contents::new(current, Chronology::Middle));
         }
-        None
     }
 }
